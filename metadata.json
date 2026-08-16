@@ -1,0 +1,6 @@
+{
+  "name": "LocalHub",
+  "description": "Video-first local marketplace for Lafia, Nigeria. Role-based experiences for Buyers, Vendors, and Staff with AI draft assistance, mock payments, and 5% commission ledger.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
