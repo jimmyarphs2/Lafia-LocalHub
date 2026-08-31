@@ -1,0 +1,274 @@
+.workspace,
+.providerGate {
+  border: 1px solid #dfe5f0;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(8, 20, 46, 0.07);
+}
+
+.workspace {
+  display: grid;
+  gap: 24px;
+  padding: clamp(22px, 5vw, 42px);
+}
+
+.providerGate {
+  max-width: 720px;
+  margin-inline: auto;
+  padding: clamp(24px, 6vw, 48px);
+  color: #33415c;
+}
+
+.providerGate > svg {
+  color: #2350f4;
+}
+
+.providerGate h2,
+.sectionHeading h2 {
+  margin: 0 0 10px;
+  color: #08142e;
+  font-size: clamp(1.75rem, 6vw, 2.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.providerGate p,
+.sectionHeading p {
+  color: #536079;
+}
+
+.eyebrow {
+  margin: 12px 0 7px;
+  color: #2350f4 !important;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sectionHeading p,
+.picker p,
+.error p {
+  margin-bottom: 0;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field label {
+  color: #08142e;
+  font-weight: 750;
+}
+
+.field small,
+.fileMeta {
+  color: #647189;
+  font-size: 0.84rem;
+}
+
+.field select,
+.field textarea {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #bec8da;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #08142e;
+  padding: 11px 13px;
+  font: inherit;
+}
+
+.field textarea {
+  min-height: 94px;
+  resize: vertical;
+}
+
+.field select:focus,
+.field textarea:focus,
+.pickerButton:focus-within,
+.cameraButton:focus-within,
+.primaryButton:focus-visible,
+.removeButton:focus-visible,
+.primaryLink:focus-visible {
+  outline: 3px solid rgba(35, 80, 244, 0.25);
+  outline-offset: 2px;
+}
+
+.picker {
+  display: grid;
+  gap: 14px;
+  border: 1px dashed #9aabca;
+  border-radius: 15px;
+  background: #f8faff;
+  padding: 22px;
+}
+
+.picker > svg {
+  color: #2350f4;
+}
+
+.picker strong {
+  color: #08142e;
+}
+
+.picker p {
+  color: #647189;
+  font-size: 0.88rem;
+}
+
+.pickerActions,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pickerButton,
+.cameraButton,
+.primaryButton,
+.removeButton,
+.primaryLink {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.pickerButton,
+.primaryButton,
+.primaryLink {
+  border: 1px solid #2350f4;
+  background: #2350f4;
+  color: #ffffff;
+}
+
+.cameraButton,
+.removeButton {
+  border: 1px solid #bac5d7;
+  background: #ffffff;
+  color: #24324e;
+}
+
+.pickerButton:has(input:disabled),
+.cameraButton:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.primaryButton:disabled,
+.removeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.selectionCard {
+  display: grid;
+  gap: 18px;
+  border: 1px solid #dfe5f0;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.preview {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 11px;
+  background: #eef2fa;
+  color: #536079;
+}
+
+.preview img,
+.preview video {
+  width: 100%;
+  max-height: 360px;
+  display: block;
+  object-fit: contain;
+}
+
+.selectionDetails {
+  min-width: 0;
+}
+
+.fileName {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #08142e;
+  font-weight: 780;
+}
+
+.fileMeta {
+  margin: 4px 0 18px;
+}
+
+.status {
+  min-height: 26px;
+  color: #536079;
+}
+
+.success {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: #087f43;
+  font-weight: 700;
+}
+
+.success svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.error {
+  border: 1px solid #f0b4ae;
+  border-radius: 11px;
+  background: #fff2f0;
+  color: #8e1f16;
+  padding: 13px 14px;
+}
+
+.error p {
+  margin-top: 4px;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@media (min-width: 720px) {
+  .picker {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .selectionCard {
+    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+    align-items: start;
+  }
+}
+
+@media (max-width: 560px) {
+  .pickerActions,
+  .actions,
+  .pickerButton,
+  .cameraButton,
+  .primaryButton,
+  .removeButton {
+    width: 100%;
+  }
+}

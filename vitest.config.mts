@@ -10,7 +10,14 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/**/*.test.ts"],
+    maxWorkers: 1,
+    pool: "threads",
+    include: [
+      "tests/**/*.test.{ts,tsx}",
+      "components/**/*.test.{ts,tsx}",
+      "lib/**/*.test.{ts,tsx}",
+    ],
+    setupFiles: ["tests/setup.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],

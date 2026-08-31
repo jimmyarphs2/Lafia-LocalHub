@@ -1,0 +1,52 @@
+.form {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  width: min(100%, 28rem);
+  margin-top: 24px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+}
+
+.field label {
+  font-weight: 750;
+}
+
+.field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.field input:focus-visible {
+  border-color: var(--blue);
+}
+
+.help,
+.feedback {
+  margin: 0;
+}
+
+.help {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.feedback {
+  max-width: 38rem;
+}
+
+@media (max-width: 520px) {
+  .form,
+  .form > button {
+    width: 100%;
+  }
+}

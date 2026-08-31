@@ -1,0 +1,288 @@
+.route {
+  min-height: 100vh;
+  background: #f5f7fb;
+  color: var(--ink);
+}
+
+.skipLink {
+  position: fixed;
+  left: 16px;
+  top: 12px;
+  z-index: 20;
+  transform: translateY(-160%);
+  border-radius: 8px;
+  background: var(--ink);
+  color: white;
+  padding: 10px 14px;
+}
+
+.skipLink:focus {
+  transform: translateY(0);
+}
+
+.header {
+  border-bottom: 1px solid var(--line);
+  background: white;
+}
+
+.headerInner {
+  width: min(1240px, calc(100% - 40px));
+  min-height: 76px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.workspaceLabel {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.shell {
+  width: min(1240px, calc(100% - 40px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 32px;
+  padding: 32px 0 64px;
+}
+
+.sidebar {
+  align-self: start;
+  position: sticky;
+  top: 24px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+}
+
+.sidebar strong,
+.sidebar a {
+  display: block;
+}
+
+.sidebar strong {
+  margin-bottom: 12px;
+}
+
+.sidebar a {
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #eef2ff;
+  color: var(--blue);
+  font-weight: 750;
+}
+
+.main {
+  min-width: 0;
+}
+
+.pageHeading {
+  margin-bottom: 24px;
+}
+
+.pageHeading h1 {
+  max-width: 760px;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+}
+
+.pageHeading p {
+  max-width: 760px;
+  color: var(--muted);
+}
+
+.boundaryNotice,
+.unavailable,
+.marketEmpty {
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: white;
+}
+
+.boundaryNotice {
+  border-left: 4px solid var(--blue);
+  margin-bottom: 22px;
+}
+
+.unavailable {
+  border-left: 4px solid #b42318;
+}
+
+.marketEmpty {
+  border: 1px dashed #a9b7d2;
+}
+
+.marketNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 22px;
+}
+
+.marketNav a {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 13px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: white;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.marketNav a[aria-current="page"] {
+  border-color: var(--blue);
+  color: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+
+.card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: white;
+}
+
+.cardHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.cardHeading h2 {
+  margin-bottom: 0;
+}
+
+.eyebrow {
+  margin-bottom: 5px;
+  color: var(--blue);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.readOnlyBadge,
+.pendingStatus {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.readOnlyBadge {
+  padding: 6px 10px;
+  background: #eef2ff;
+  color: #2445b8;
+}
+
+.tableViewport {
+  overflow-x: auto;
+}
+
+.tableViewport:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: -3px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th,
+.table td {
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.table thead th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.table tbody th {
+  min-width: 220px;
+}
+
+.table tbody th small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.pendingStatus {
+  padding: 5px 9px;
+  border: 1px solid #f2c46d;
+  background: #fff7e6;
+  color: #7a4b00;
+}
+
+.empty {
+  margin: 0;
+  padding: 28px 22px;
+  color: var(--muted);
+}
+
+.pagination {
+  padding: 16px 22px;
+  text-align: right;
+}
+
+.pagination a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--blue);
+  font-weight: 750;
+}
+
+@media (max-width: 800px) {
+  .headerInner {
+    width: min(100% - 28px, 1240px);
+    min-height: auto;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding: 12px 0;
+  }
+
+  .workspaceLabel {
+    flex-basis: 100%;
+  }
+
+  .shell {
+    display: block;
+    width: min(100% - 28px, 1240px);
+    padding-top: 22px;
+  }
+
+  .sidebar {
+    position: static;
+    margin-bottom: 22px;
+  }
+
+  .cardHeading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .table th,
+  .table td {
+    padding: 13px 14px;
+  }
+}

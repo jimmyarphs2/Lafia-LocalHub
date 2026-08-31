@@ -1,17 +1,22 @@
 {
-  "name": "lafia-hub",
+  "name": "localhub",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "format:check": "prettier --check ."
+    "dev": "node node_modules/next/dist/bin/next dev",
+    "build": "node node_modules/next/dist/bin/next build",
+    "start": "node node_modules/next/dist/bin/next start",
+    "lint": "node scripts/run-eslint.mjs",
+    "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
+    "test": "node node_modules/vitest/vitest.mjs run",
+    "test:watch": "node node_modules/vitest/vitest.mjs",
+    "test:coverage": "node node_modules/vitest/vitest.mjs run --coverage",
+    "format:check": "node node_modules/prettier/bin/prettier.cjs --check .",
+    "quality": "node scripts/run-quality.mjs",
+    "db:start": "node node_modules/supabase/dist/supabase.js start",
+    "db:stop": "node node_modules/supabase/dist/supabase.js stop",
+    "db:reset": "node node_modules/supabase/dist/supabase.js db reset",
+    "db:lint": "node node_modules/supabase/dist/supabase.js db lint --local"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
