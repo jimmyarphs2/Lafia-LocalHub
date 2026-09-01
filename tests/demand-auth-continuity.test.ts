@@ -40,6 +40,7 @@ import { GET as authCallback } from "@/app/auth/callback/route";
 import { POST as authResume } from "@/app/auth/resume/route";
 import {
   AUTH_RETURN_COOKIE,
+  authReturnCookieName,
   serializeAuthReturnCookie,
 } from "@/lib/auth/redirects";
 
@@ -52,11 +53,13 @@ const validCookie = Buffer.from(
 ).toString("base64url");
 
 function callbackRequest(cookie: string) {
+  const flowId = "flow_demand_123";
   const destination = new URL("http://localhost:3000/auth/callback");
   destination.searchParams.set("code", "auth-code");
+  destination.searchParams.set("sb_flow_id", flowId);
   return new NextRequest(destination, {
     headers: {
-      cookie: `localhub-intent=${cookie}; ${AUTH_RETURN_COOKIE}=${serializeAuthReturnCookie(demandPath)}`,
+      cookie: `localhub-intent=${cookie}; ${authReturnCookieName(flowId)}=${serializeAuthReturnCookie(demandPath)}`,
     },
   });
 }

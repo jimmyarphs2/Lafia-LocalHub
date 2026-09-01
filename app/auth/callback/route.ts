@@ -29,7 +29,19 @@ import { parseDemandConfirmationPath } from "@/lib/demand/contract";
 function setAuthFailure(
   response: NextResponse,
   error: "auth_failed" | "configuration",
+  stage:
+    | "configuration"
+    | "invalid_correlation"
+    | "missing_code"
+    | "missing_correlation_cookie"
+    | "rate_limit"
+    | "code_exchange"
+    | "session_validation",
 ) {
+  if (process.env.NODE_ENV === "production") {
+    // Deliberately omit codes, flow IDs, cookies, destinations, and user data.
+    console.warn("localhub.auth.callback.failed", { stage });
+  }
   response.headers.set(
     "Location",
     new URL(`/auth?error=${error}`, getAppUrl()).toString(),
@@ -44,11 +56,22 @@ export async function GET(request: NextRequest) {
   const flowId = parsePkceFlowId(rawFlowId);
   const rawReturnState = incoming.searchParams.get("return_state");
   const returnState = parseAuthReturnState(rawReturnState);
-  const returnCookieName =
-    authReturnStateCookieName(returnState) ?? authReturnCookieName(flowId);
+  const flowReturnCookieName = authReturnCookieName(flowId);
+  const stateReturnCookieName = authReturnStateCookieName(returnState);
+  const returnCookieName = stateReturnCookieName ?? flowReturnCookieName;
   const scopedReturn = Boolean(returnState || flowId);
+  const flowReturnCookie = flowId
+    ? request.cookies.get(flowReturnCookieName)
+    : undefined;
+  const flowReturnValue = flowId
+    ? parseAuthReturnCookie(flowReturnCookie?.value)
+    : null;
+  const stateReturnValue = stateReturnCookieName
+    ? parseAuthReturnCookie(request.cookies.get(stateReturnCookieName)?.value)
+    : null;
+  const scopedReturnValue = stateReturnValue ?? flowReturnValue;
   const next =
-    parseAuthReturnCookie(request.cookies.get(returnCookieName)?.value) ??
+    scopedReturnValue ??
     (!scopedReturn
       ? parseAuthReturnCookie(request.cookies.get(AUTH_RETURN_COOKIE)?.value)
       : null) ??
@@ -64,15 +87,41 @@ export async function GET(request: NextRequest) {
       ...authReturnCookieOptions(),
       maxAge: 0,
     });
+  if (
+    flowReturnCookieName !== AUTH_RETURN_COOKIE &&
+    flowReturnCookieName !== returnCookieName
+  )
+    response.cookies.set(flowReturnCookieName, "", {
+      ...authReturnCookieOptions(),
+      maxAge: 0,
+    });
   const config = getPublicSupabaseConfig();
 
-  if (!config) return setAuthFailure(response, "configuration");
+  if (!config)
+    return setAuthFailure(response, "configuration", "configuration");
+  if (!code) return setAuthFailure(response, "auth_failed", "missing_code");
   if (
-    !code ||
     (rawFlowId !== null && !flowId) ||
-    (rawReturnState !== null && !returnState)
-  )
-    return setAuthFailure(response, "auth_failed");
+    (rawReturnState !== null && !returnState) ||
+    // Email PKCE legitimately carries both parameters, but provider OAuth and
+    // email continuations must never contribute two competing app markers.
+    (rawFlowId !== null &&
+      rawReturnState !== null &&
+      flowReturnCookie !== undefined) ||
+    (rawFlowId === null && rawReturnState === null)
+  ) {
+    return setAuthFailure(response, "auth_failed", "invalid_correlation");
+  }
+  // Provider/email initiation always reserves an HttpOnly marker for the exact
+  // flow. A missing marker means this callback is expired, consumed, or was not
+  // initiated by this browser, so do not consume its authorization code.
+  if (scopedReturn && !scopedReturnValue) {
+    return setAuthFailure(
+      response,
+      "auth_failed",
+      "missing_correlation_cookie",
+    );
+  }
 
   const supabase = createServerClient(config.url, config.anonKey, {
     auth: {
@@ -94,12 +143,21 @@ export async function GET(request: NextRequest) {
   });
 
   const rateLimitClient = getServerAdminSupabaseClient();
-  if (
-    !rateLimitClient ||
-    (await consumeAuthRateLimit(rateLimitClient, "auth_callback", request)) !==
-      "allowed"
-  ) {
-    return setAuthFailure(response, "auth_failed");
+  let rateLimitAllowed = false;
+  try {
+    rateLimitAllowed = Boolean(
+      rateLimitClient &&
+      (await consumeAuthRateLimit(
+        rateLimitClient,
+        "auth_callback",
+        request,
+      )) === "allowed",
+    );
+  } catch {
+    rateLimitAllowed = false;
+  }
+  if (!rateLimitAllowed) {
+    return setAuthFailure(response, "auth_failed", "rate_limit");
   }
   let exchangeError: unknown;
   try {
@@ -113,7 +171,7 @@ export async function GET(request: NextRequest) {
     exchangeError = true;
   }
   if (exchangeError) {
-    return setAuthFailure(response, "auth_failed");
+    return setAuthFailure(response, "auth_failed", "code_exchange");
   }
   let userData: { user: unknown } | null = null;
   let userError: unknown;
@@ -125,7 +183,7 @@ export async function GET(request: NextRequest) {
     userError = true;
   }
   if (userError || !userData?.user) {
-    return setAuthFailure(response, "auth_failed");
+    return setAuthFailure(response, "auth_failed", "session_validation");
   }
 
   // A demand continuation is independent of older guest commitments. Preserve

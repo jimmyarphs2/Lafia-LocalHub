@@ -29,7 +29,7 @@ function logoutRequest(next = "/lafia", origin = "http://localhost:3000") {
     body: new URLSearchParams({ next }),
     headers: {
       cookie:
-        "sb-localhub-auth-token=expired; sb-localhub-auth-token.0=chunk; localhub-auth-return-flow_google_123=continuation; unrelated=keep",
+        "sb-localhub-auth-token=expired; sb-localhub-auth-token.0=chunk; sb-localhub-auth-token-code-verifier=legacy-verifier; sb-localhub-auth-token-flows-code-verifier=flow-index; sb-localhub-auth-token-flow-flow_google_123-code-verifier=flow-verifier; localhub-auth-return-flow_google_123=continuation; unrelated=keep",
       "content-type": "application/x-www-form-urlencoded",
       origin,
     },
@@ -59,6 +59,18 @@ describe("local session logout", () => {
     expect(response.cookies.get("sb-localhub-auth-token")?.maxAge).toBe(0);
     expect(response.cookies.get("sb-localhub-auth-token.0")?.maxAge).toBe(0);
     expect(
+      response.cookies.get("sb-localhub-auth-token-code-verifier")?.maxAge,
+    ).toBe(0);
+    expect(
+      response.cookies.get("sb-localhub-auth-token-flows-code-verifier")
+        ?.maxAge,
+    ).toBe(0);
+    expect(
+      response.cookies.get(
+        "sb-localhub-auth-token-flow-flow_google_123-code-verifier",
+      )?.maxAge,
+    ).toBe(0);
+    expect(
       response.cookies.get("localhub-auth-return-flow_google_123")?.maxAge,
     ).toBe(0);
     expect(response.cookies.get("unrelated")).toBeUndefined();
@@ -75,6 +87,35 @@ describe("local session logout", () => {
     expect(new URL(response.headers.get("location")!).pathname).toBe("/");
     expect(response.cookies.get("sb-localhub-auth-token")?.maxAge).toBe(0);
     expect(response.cookies.get("sb-localhub-auth-token.0")?.maxAge).toBe(0);
+  });
+
+  it("records only a constant stage when the provider resolves a logout error", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    authMocks.signOut.mockResolvedValueOnce({
+      error: { message: "sensitive provider detail" },
+    });
+
+    try {
+      const response = await logoutRoute.POST(logoutRequest());
+
+      expect(response.cookies.get("sb-localhub-auth-token")?.maxAge).toBe(0);
+      expect(warning).toHaveBeenCalledWith("localhub.auth.logout.failed", {
+        stage: "provider_sign_out",
+      });
+      expect(JSON.stringify(warning.mock.calls)).not.toContain("sensitive");
+    } finally {
+      warning.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("never redirects logout back into an auth controller route", async () => {
+    const response = await logoutRoute.POST(
+      logoutRequest("/auth/callback?code=stale&sb_flow_id=flow_old_123"),
+    );
+
+    expect(new URL(response.headers.get("location")!).pathname).toBe("/");
   });
 
   it("rejects cross-origin requests before touching the session", async () => {

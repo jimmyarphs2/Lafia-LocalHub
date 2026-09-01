@@ -9,7 +9,7 @@ import {
   authReturnCookieOptions,
   GUEST_INTENT_COOKIE,
   isSameOrigin,
-  safeReturnPath,
+  safeAuthReturnPath,
   supabaseAuthCookieOptions,
 } from "@/lib/auth/redirects";
 import { getAppUrl, getPublicSupabaseConfig } from "@/lib/config/env";
@@ -20,6 +20,15 @@ const logoutSchema = z.object({ next: z.string().max(2048).optional() });
 
 function supabaseAuthCookiePrefix(url: string) {
   return `sb-${new URL(url).hostname.split(".")[0]}-auth-token`;
+}
+
+function reportProviderSignOutFailure() {
+  if (process.env.NODE_ENV === "production") {
+    // No cookie, user, provider, or destination data is logged.
+    console.warn("localhub.auth.logout.failed", {
+      stage: "provider_sign_out",
+    });
+  }
 }
 
 function clearLocalAuthState(
@@ -85,7 +94,9 @@ export async function POST(request: NextRequest) {
   const parsed = formData
     ? logoutSchema.safeParse(Object.fromEntries(formData))
     : null;
-  const next = safeReturnPath(parsed?.success ? parsed.data.next : undefined);
+  const next = safeAuthReturnPath(
+    parsed?.success ? parsed.data.next : undefined,
+  );
   const response = NextResponse.redirect(new URL(next, getAppUrl()), 303);
   applyAuthResponseHeaders(response.headers);
 
@@ -112,9 +123,11 @@ export async function POST(request: NextRequest) {
     },
   });
   try {
-    await supabase.auth.signOut({ scope: "local" });
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error) reportProviderSignOutFailure();
   } catch {
     // Expired or provider-unreachable sessions are still cleared locally.
+    reportProviderSignOutFailure();
   }
   clearLocalAuthState(request, response, config.url);
   return response;
