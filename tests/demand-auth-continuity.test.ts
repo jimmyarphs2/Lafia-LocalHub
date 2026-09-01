@@ -38,6 +38,10 @@ import { NextRequest } from "next/server";
 
 import { GET as authCallback } from "@/app/auth/callback/route";
 import { POST as authResume } from "@/app/auth/resume/route";
+import {
+  AUTH_RETURN_COOKIE,
+  serializeAuthReturnCookie,
+} from "@/lib/auth/redirects";
 
 const intentId = "11111111-1111-4111-8111-111111111111";
 const categoryId = "22222222-2222-4222-8222-222222222222";
@@ -50,9 +54,10 @@ const validCookie = Buffer.from(
 function callbackRequest(cookie: string) {
   const destination = new URL("http://localhost:3000/auth/callback");
   destination.searchParams.set("code", "auth-code");
-  destination.searchParams.set("next", demandPath);
   return new NextRequest(destination, {
-    headers: { cookie: `localhub-intent=${cookie}` },
+    headers: {
+      cookie: `localhub-intent=${cookie}; ${AUTH_RETURN_COOKIE}=${serializeAuthReturnCookie(demandPath)}`,
+    },
   });
 }
 
@@ -61,7 +66,7 @@ function resumeRequest(cookie: string) {
     body: new URLSearchParams({ intent: intentId, next: demandPath }),
     headers: {
       "content-type": "application/x-www-form-urlencoded",
-      cookie: `localhub-intent=${cookie}`,
+      cookie: `localhub-intent=${cookie}; ${AUTH_RETURN_COOKIE}=${serializeAuthReturnCookie(demandPath)}`,
       origin: "http://localhost:3000",
     },
     method: "POST",

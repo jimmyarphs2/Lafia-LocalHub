@@ -19,7 +19,9 @@ describe("auth route boundaries", () => {
       "`/auth?resume=1&intent=${encodeURIComponent(intent.id)}",
     );
     expect(callback).not.toContain('searchParams.set("guest_intent"');
-    expect(callback).toContain('response.headers.set(\n      "Location"');
+    expect(callback).not.toContain("&next=${encodeURIComponent(next)}");
+    expect(callback).toContain("serializeAuthReturnCookie(next)");
+    expect(callback).toMatch(/response\.headers\.set\(\s*"Location"/);
     const resume = read("app/auth/resume/route.ts");
     expect(resume).toContain("export async function POST");
     expect(resume).not.toContain("export async function GET");

@@ -44,6 +44,13 @@
   gap: 18px;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .vendorNav {
   border-top: 1px solid #edf0f6;
   background: #ffffff;
@@ -603,6 +610,17 @@
 }
 
 @media (max-width: 520px) {
+  .headerInner {
+    align-items: flex-start;
+    padding-block: 10px;
+  }
+
+  .headerActions {
+    align-items: flex-end;
+    flex-direction: column-reverse;
+    gap: 2px;
+  }
+
   .progressItem span {
     position: absolute;
     width: 1px;

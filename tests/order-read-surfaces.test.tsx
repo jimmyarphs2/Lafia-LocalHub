@@ -176,9 +176,11 @@ describe("order history route boundaries", () => {
       marketShell.indexOf("function MobileCustomerNav"),
     );
 
-    expect(mobileNav.match(/<Link /g)).toHaveLength(4);
-    expect(mobileNav.match(/<AccountIntentButton/g)).toHaveLength(1);
+    expect(mobileNav.match(/<Link/g)).toHaveLength(5);
+    expect(mobileNav).not.toContain("AccountIntentButton");
     expect(mobileNav).toContain("/activity");
     expect(mobileNav).toContain("<span>Activity</span>");
+    expect(mobileNav).toContain('identity ? "Account" : "Sign in"');
+    expect(mobileNav).toContain("/account");
   });
 });

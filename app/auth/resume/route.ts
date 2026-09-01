@@ -3,11 +3,17 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import {
+  applyAuthResponseHeaders,
+  AUTH_RETURN_COOKIE,
   authCookieOptions,
+  authReturnCookieOptions,
   GUEST_INTENT_COOKIE,
   isSameOrigin,
+  parseAuthReturnCookie,
   parseGuestIntentCookie,
-  safeReturnPath,
+  safeAuthReturnPath,
+  serializeAuthReturnCookie,
+  supabaseAuthCookieOptions,
 } from "@/lib/auth/redirects";
 import { consumeAuthRateLimit } from "@/lib/auth/rate-limit";
 import { getAppUrl, getPublicSupabaseConfig } from "@/lib/config/env";
@@ -24,16 +30,18 @@ import { parseDemandConfirmationPath } from "@/lib/demand/contract";
 const MAX_RESUME_FORM_BYTES = 4 * 1024;
 const resumeSchema = z.object({
   intent: requestIntentIdSchema,
-  next: z.string().max(2048),
+  next: z.string().max(2048).optional(),
 });
 
 /** This endpoint is intentionally POST-only; GET requests can never claim an intent. */
 export async function POST(request: NextRequest) {
   if (!isSameOrigin(request)) {
-    return NextResponse.json(
+    const denied = NextResponse.json(
       { error: "Invalid request origin." },
       { status: 403 },
     );
+    applyAuthResponseHeaders(denied.headers);
+    return denied;
   }
   const formData = await readBoundedUrlEncodedForm(
     request,
@@ -41,11 +49,29 @@ export async function POST(request: NextRequest) {
   );
   const parsed =
     formData && resumeSchema.safeParse(Object.fromEntries(formData));
-  const recoveryNext = parsed?.success ? safeReturnPath(parsed.data.next) : "/";
+  const cookieNext = parseAuthReturnCookie(
+    request.cookies.get(AUTH_RETURN_COOKIE)?.value,
+  );
+  const recoveryNext =
+    cookieNext ??
+    (parsed?.success ? safeAuthReturnPath(parsed.data.next) : "/");
   const retry = parsed?.success
-    ? `/auth?resume=1&intent=${encodeURIComponent(parsed.data.intent)}&next=${encodeURIComponent(recoveryNext)}`
+    ? `/auth?resume=1&intent=${encodeURIComponent(parsed.data.intent)}`
     : "/auth?error=auth_failed";
   const response = NextResponse.redirect(new URL(retry, getAppUrl()), 303);
+  applyAuthResponseHeaders(response.headers);
+  if (parsed?.success) {
+    response.cookies.set(
+      AUTH_RETURN_COOKIE,
+      serializeAuthReturnCookie(recoveryNext),
+      authReturnCookieOptions(),
+    );
+  } else {
+    response.cookies.set(AUTH_RETURN_COOKIE, "", {
+      ...authReturnCookieOptions(),
+      maxAge: 0,
+    });
+  }
   if (!parsed || !parsed.success) return response;
   if (parseDemandConfirmationPath(recoveryNext)) {
     // A demand continuation never claims, clears, or follows an unrelated
@@ -54,6 +80,10 @@ export async function POST(request: NextRequest) {
       "Location",
       new URL(recoveryNext, getAppUrl()).toString(),
     );
+    response.cookies.set(AUTH_RETURN_COOKIE, "", {
+      ...authReturnCookieOptions(),
+      maxAge: 0,
+    });
     return response;
   }
   const intent = parseGuestIntentCookie(
@@ -63,14 +93,20 @@ export async function POST(request: NextRequest) {
   if (!intent || intent.id !== parsed.data.intent || !config) return response;
 
   const supabase = createServerClient(config.url, config.anonKey, {
+    auth: {
+      experimental: { appendPkceFlowIdToRedirects: true },
+    },
+    cookieOptions: supabaseAuthCookieOptions(),
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll(
         values: { name: string; value: string; options: CookieOptions }[],
+        headers: Record<string, string>,
       ) {
         values.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options),
         );
+        applyAuthResponseHeaders(response.headers, headers);
       },
     },
   });
@@ -109,6 +145,10 @@ export async function POST(request: NextRequest) {
       ...authCookieOptions(),
       maxAge: 0,
     });
+    response.cookies.set(AUTH_RETURN_COOKIE, "", {
+      ...authReturnCookieOptions(),
+      maxAge: 0,
+    });
     return response;
   }
   response.headers.set(
@@ -126,6 +166,10 @@ export async function POST(request: NextRequest) {
   );
   response.cookies.set(GUEST_INTENT_COOKIE, "", {
     ...authCookieOptions(),
+    maxAge: 0,
+  });
+  response.cookies.set(AUTH_RETURN_COOKIE, "", {
+    ...authReturnCookieOptions(),
     maxAge: 0,
   });
   return response;

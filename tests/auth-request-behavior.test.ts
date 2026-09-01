@@ -6,7 +6,21 @@ const authMocks = vi.hoisted(() => ({
   consumeAuthRateLimit: vi.fn(),
   exchangeCodeForSession: vi.fn(),
   getUser: vi.fn(),
+  setAuthCookies: null as
+    null | ((cookies: AuthCookie[], headers?: Record<string, string>) => void),
 }));
+
+type AuthCookie = {
+  name: string;
+  value: string;
+  options: {
+    httpOnly?: boolean;
+    maxAge?: number;
+    path?: string;
+    sameSite?: "lax" | "strict" | "none" | boolean;
+    secure?: boolean;
+  };
+};
 
 vi.mock("@/lib/config/env", () => ({
   getAppOrigin: () => "http://localhost:3000",
@@ -24,13 +38,27 @@ vi.mock("@/lib/supabase/admin", () => ({
   getServerAdminSupabaseClient: () => ({ rpc: authMocks.adminRpc }),
 }));
 vi.mock("@supabase/ssr", () => ({
-  createServerClient: () => ({
-    auth: {
-      exchangeCodeForSession: authMocks.exchangeCodeForSession,
-      getUser: authMocks.getUser,
+  createServerClient: (
+    _url: string,
+    _key: string,
+    options: {
+      cookies: {
+        setAll: (
+          cookies: AuthCookie[],
+          headers?: Record<string, string>,
+        ) => void;
+      };
     },
-    rpc: authMocks.claimGuestIntent,
-  }),
+  ) => {
+    authMocks.setAuthCookies = options.cookies.setAll;
+    return {
+      auth: {
+        exchangeCodeForSession: authMocks.exchangeCodeForSession,
+        getUser: authMocks.getUser,
+      },
+      rpc: authMocks.claimGuestIntent,
+    };
+  },
 }));
 
 import { NextRequest } from "next/server";
@@ -39,7 +67,12 @@ import * as resumeRoute from "@/app/auth/resume/route";
 import { POST as intentPost } from "@/app/auth/intent/route";
 import { GET as callbackGet } from "@/app/auth/callback/route";
 import {
+  AUTH_RETURN_COOKIE,
+  authReturnCookieName,
+  authReturnStateCookieName,
   GUEST_INTENT_COOKIE,
+  parseAuthReturnCookie,
+  serializeAuthReturnCookie,
   serializeGuestIntentCookie,
 } from "@/lib/auth/redirects";
 import { parseGuestIntentClaim } from "@/lib/requests/guest-claim";
@@ -63,10 +96,10 @@ function requestWithForm(
   });
 }
 
-function requestWithIntentCookie(url: string) {
+function requestWithIntentCookie(url: string, returnTo = "/lafia/requests") {
   return new NextRequest(url, {
     headers: {
-      cookie: `${GUEST_INTENT_COOKIE}=${serializeGuestIntentCookie(intentId, intentSecret)}`,
+      cookie: `${GUEST_INTENT_COOKIE}=${serializeGuestIntentCookie(intentId, intentSecret)}; ${AUTH_RETURN_COOKIE}=${serializeAuthReturnCookie(returnTo)}`,
     },
   });
 }
@@ -81,6 +114,7 @@ function resetAuthMocks() {
   authMocks.consumeAuthRateLimit.mockReset();
   authMocks.exchangeCodeForSession.mockReset();
   authMocks.getUser.mockReset();
+  authMocks.setAuthCookies = null;
   authMocks.consumeAuthRateLimit.mockResolvedValue("allowed");
   authMocks.exchangeCodeForSession.mockResolvedValue({ error: null });
   authMocks.getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
@@ -140,9 +174,193 @@ describe("auth intent route behavior", () => {
 describe("auth callback and resume capability behavior", () => {
   function callbackRequest() {
     return requestWithIntentCookie(
-      "http://localhost:3000/auth/callback?code=oauth-code&next=%2Flafia%2Frequests",
+      "http://localhost:3000/auth/callback?code=oauth-code",
     );
   }
+
+  it("exchanges the code, propagates session cookies, and clears the opaque return cookie", async () => {
+    authMocks.exchangeCodeForSession.mockImplementationOnce(async () => {
+      authMocks.setAuthCookies?.([
+        {
+          name: "sb-localhub-auth-token",
+          value: "opaque-session-value",
+          options: { httpOnly: true, path: "/", sameSite: "lax" },
+        },
+      ]);
+      return { error: null };
+    });
+    authMocks.claimGuestIntent.mockResolvedValue({
+      data: {
+        kind: "continue",
+        outcome: "claimed",
+        return_to: "/lafia/requests",
+      },
+      error: null,
+    });
+
+    const response = await callbackGet(callbackRequest());
+
+    expect(authMocks.exchangeCodeForSession).toHaveBeenCalledWith(
+      "oauth-code",
+      undefined,
+    );
+    expect(response.cookies.get("sb-localhub-auth-token")?.value).toBe(
+      "opaque-session-value",
+    );
+    expect(response.cookies.get(AUTH_RETURN_COOKIE)?.value).toBe("");
+    expect(response.cookies.get(AUTH_RETURN_COOKIE)?.maxAge).toBe(0);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
+
+  it("correlates concurrent PKCE callbacks with their reserved flow ids", async () => {
+    const sharedCookieHeader = [
+      `${authReturnCookieName("flow_one_123")}=${serializeAuthReturnCookie("/lafia/account")}`,
+      `${authReturnCookieName("flow_two_456")}=${serializeAuthReturnCookie("/vendor")}`,
+    ].join("; ");
+    const first = await callbackGet(
+      new NextRequest(
+        "http://localhost:3000/auth/callback?code=code-one&sb_flow_id=flow_one_123",
+        {
+          headers: {
+            cookie: sharedCookieHeader,
+          },
+        },
+      ),
+    );
+    const second = await callbackGet(
+      new NextRequest(
+        "http://localhost:3000/auth/callback?code=code-two&sb_flow_id=flow_two_456",
+        {
+          headers: {
+            cookie: sharedCookieHeader,
+          },
+        },
+      ),
+    );
+
+    expect(authMocks.exchangeCodeForSession).toHaveBeenNthCalledWith(
+      1,
+      "code-one",
+      { flowId: "flow_one_123" },
+    );
+    expect(authMocks.exchangeCodeForSession).toHaveBeenNthCalledWith(
+      2,
+      "code-two",
+      { flowId: "flow_two_456" },
+    );
+    expect(new URL(first.headers.get("location")!).pathname).toBe(
+      "/lafia/account",
+    );
+    expect(new URL(second.headers.get("location")!).pathname).toBe("/vendor");
+    expect(
+      first.cookies.get(authReturnCookieName("flow_one_123"))?.maxAge,
+    ).toBe(0);
+    expect(
+      second.cookies.get(authReturnCookieName("flow_two_456"))?.maxAge,
+    ).toBe(0);
+  });
+
+  it("does not inherit an unscoped return path when a scoped PKCE cookie is absent", async () => {
+    const response = await callbackGet(
+      new NextRequest(
+        "http://localhost:3000/auth/callback?code=oauth-code&sb_flow_id=flow_missing_123",
+        {
+          headers: {
+            cookie: `${AUTH_RETURN_COOKIE}=${serializeAuthReturnCookie("/vendor")}`,
+          },
+        },
+      ),
+    );
+
+    expect(authMocks.exchangeCodeForSession).toHaveBeenCalledWith(
+      "oauth-code",
+      { flowId: "flow_missing_123" },
+    );
+    expect(new URL(response.headers.get("location")!).pathname).toBe("/");
+  });
+
+  it("resumes an email flow only from its matching opaque return state", async () => {
+    const returnState = "11111111-2222-4333-8444-555555555555";
+    const returnCookieName = authReturnStateCookieName(returnState)!;
+    const response = await callbackGet(
+      new NextRequest(
+        `http://localhost:3000/auth/callback?code=email-code&return_state=${returnState}`,
+        {
+          headers: {
+            cookie: [
+              `${AUTH_RETURN_COOKIE}=${serializeAuthReturnCookie("/vendor")}`,
+              `${returnCookieName}=${serializeAuthReturnCookie("/lafia/account")}`,
+            ].join("; "),
+          },
+        },
+      ),
+    );
+
+    expect(authMocks.exchangeCodeForSession).toHaveBeenCalledWith(
+      "email-code",
+      undefined,
+    );
+    expect(new URL(response.headers.get("location")!).pathname).toBe(
+      "/lafia/account",
+    );
+    expect(response.cookies.get(returnCookieName)?.maxAge).toBe(0);
+  });
+
+  it("rejects a malformed reserved flow id before consuming the OAuth code", async () => {
+    const response = await callbackGet(
+      new NextRequest(
+        "http://localhost:3000/auth/callback?code=oauth-code&sb_flow_id=bad%20flow",
+        {
+          headers: {
+            cookie: `${AUTH_RETURN_COOKIE}=${serializeAuthReturnCookie("/lafia")}`,
+          },
+        },
+      ),
+    );
+
+    expect(
+      new URL(response.headers.get("location")!).searchParams.get("error"),
+    ).toBe("auth_failed");
+    expect(authMocks.exchangeCodeForSession).not.toHaveBeenCalled();
+  });
+
+  it("treats a missing authorization code as auth_failed and clears continuation state", async () => {
+    const response = await callbackGet(
+      new NextRequest("http://localhost:3000/auth/callback", {
+        headers: {
+          cookie: `${AUTH_RETURN_COOKIE}=${serializeAuthReturnCookie("/lafia/search?q=private")}`,
+        },
+      }),
+    );
+    const location = new URL(response.headers.get("location")!);
+
+    expect(location.pathname).toBe("/auth");
+    expect(location.searchParams.get("error")).toBe("auth_failed");
+    expect(location.searchParams.has("next")).toBe(false);
+    expect(location.href).not.toContain("private");
+    expect(authMocks.exchangeCodeForSession).not.toHaveBeenCalled();
+    expect(response.cookies.get(AUTH_RETURN_COOKIE)?.maxAge).toBe(0);
+  });
+
+  it("clears continuation state after a failed code exchange without leaking the return path", async () => {
+    authMocks.exchangeCodeForSession.mockResolvedValueOnce({
+      error: { message: "invalid code" },
+    });
+
+    const response = await callbackGet(
+      requestWithIntentCookie(
+        "http://localhost:3000/auth/callback?code=invalid",
+        "/lafia/search?q=private",
+      ),
+    );
+    const location = new URL(response.headers.get("location")!);
+
+    expect(location.pathname).toBe("/auth");
+    expect(location.searchParams.get("error")).toBe("auth_failed");
+    expect(location.searchParams.has("next")).toBe(false);
+    expect(location.href).not.toContain("private");
+    expect(response.cookies.get(AUTH_RETURN_COOKIE)?.maxAge).toBe(0);
+  });
 
   it("uses canonical DB return_to and only exposes the opaque intent id", async () => {
     authMocks.claimGuestIntent.mockResolvedValue({
@@ -205,7 +423,12 @@ describe("auth callback and resume capability behavior", () => {
     expect(location.pathname).toBe("/auth");
     expect(location.searchParams.get("resume")).toBe("1");
     expect(location.searchParams.get("intent")).toBe(intentId);
-    expect(setCookieHeader(response)).not.toMatch(/Max-Age=0/i);
+    expect(location.searchParams.has("next")).toBe(false);
+    expect(response.cookies.get(GUEST_INTENT_COOKIE)).toBeUndefined();
+    expect(response.cookies.get(AUTH_RETURN_COOKIE)?.maxAge).toBe(900);
+    expect(
+      parseAuthReturnCookie(response.cookies.get(AUTH_RETURN_COOKIE)?.value),
+    ).toBe("/lafia/requests");
   });
 
   it.each([
@@ -227,7 +450,12 @@ describe("auth callback and resume capability behavior", () => {
       expect(location.pathname).toBe("/auth");
       expect(location.searchParams.get("resume")).toBe("1");
       expect(location.searchParams.get("intent")).toBe(intentId);
-      expect(setCookieHeader(response)).not.toMatch(/Max-Age=0/i);
+      expect(location.searchParams.has("next")).toBe(false);
+      expect(response.cookies.get(GUEST_INTENT_COOKIE)).toBeUndefined();
+      expect(response.cookies.get(AUTH_RETURN_COOKIE)?.maxAge).toBe(900);
+      expect(
+        parseAuthReturnCookie(response.cookies.get(AUTH_RETURN_COOKIE)?.value),
+      ).toBe("/lafia/requests");
     },
   );
 
@@ -323,6 +551,35 @@ describe("auth callback and resume capability behavior", () => {
     expect(location.searchParams.get("intent")).toBe(intentId);
     expect(location.toString()).not.toContain(intentSecret);
     expect(setCookieHeader(response)).toMatch(/Max-Age=0/i);
+  });
+
+  it("uses the opaque continuation cookie for retry without leaking it into the auth URL", async () => {
+    authMocks.claimGuestIntent.mockResolvedValue({
+      data: { outcome: "unknown" },
+      error: null,
+    });
+
+    const response = await resumeRoute.POST(
+      requestWithForm(
+        "http://localhost:3000/auth/resume",
+        { intent: intentId, next: "/attacker-controlled-internal" },
+        {
+          cookie: [
+            `${GUEST_INTENT_COOKIE}=${serializeGuestIntentCookie(intentId, intentSecret)}`,
+            `${AUTH_RETURN_COOKIE}=${serializeAuthReturnCookie("/lafia/search?q=private-intent")}`,
+          ].join("; "),
+        },
+      ),
+    );
+    const location = new URL(response.headers.get("location")!);
+
+    expect(location.pathname).toBe("/auth");
+    expect(location.searchParams.get("resume")).toBe("1");
+    expect(location.searchParams.has("next")).toBe(false);
+    expect(location.href).not.toContain("private-intent");
+    expect(
+      parseAuthReturnCookie(response.cookies.get(AUTH_RETURN_COOKIE)?.value),
+    ).toBe("/lafia/search?q=private-intent");
   });
 
   it("uses an order-specific recovery query for a terminal order capability", async () => {

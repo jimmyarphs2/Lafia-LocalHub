@@ -2,21 +2,27 @@ import Link from "next/link";
 import { ArrowRight, MapPin, Search } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
+import { AccountMenu } from "@/components/account-menu";
 import { MarketFooter } from "@/components/market-footer";
+import { getCurrentIdentity } from "@/lib/auth/identity";
 import { getLaunchMarket } from "@/lib/market/config";
 import { isDemoMode } from "@/lib/market/public-url";
 
-export default function Home() {
+export default async function Home() {
   const market = getLaunchMarket();
   const demoMode = isDemoMode();
+  const identity = await getCurrentIdentity();
   return (
     <div className="welcome-page">
       <header className="welcome-header container">
         <BrandMark />
-        <Link className="text-link" href={`/${market.slug}`}>
-          Browse {demoMode ? "the Lafia demo" : market.name}{" "}
-          <ArrowRight aria-hidden="true" size={17} />
-        </Link>
+        <div className="welcome-actions">
+          <Link className="text-link" href={`/${market.slug}`}>
+            Browse {demoMode ? "the Lafia demo" : market.name}{" "}
+            <ArrowRight aria-hidden="true" size={17} />
+          </Link>
+          <AccountMenu identity={identity} marketSlug={market.slug} />
+        </div>
       </header>
       <main className="welcome-main container">
         <h1>

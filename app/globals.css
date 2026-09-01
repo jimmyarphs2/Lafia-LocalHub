@@ -118,6 +118,153 @@ button {
 .header-nav a:hover {
   color: var(--blue);
 }
+.identity-sign-in {
+  white-space: nowrap;
+}
+.account-menu {
+  position: relative;
+}
+.account-menu summary {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 10px;
+  padding: 5px 8px;
+}
+.account-menu summary::-webkit-details-marker {
+  display: none;
+}
+.account-menu summary:hover,
+.account-menu summary:focus-visible {
+  color: var(--blue);
+  background: #f3f6ff;
+}
+.account-menu summary img,
+.identity-initial {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+}
+.account-menu summary img {
+  object-fit: cover;
+}
+.identity-initial {
+  display: inline-grid;
+  place-items: center;
+  color: #ffffff;
+  background: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.identity-copy {
+  min-width: 0;
+  display: grid;
+  text-align: left;
+  line-height: 1.1;
+}
+.identity-copy strong {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.88rem;
+}
+.identity-copy small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.account-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: min(260px, calc(100vw - 28px));
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 8px;
+  box-shadow: 0 18px 48px rgba(8, 20, 46, 0.16);
+}
+.account-menu-panel a,
+.account-menu-panel button {
+  min-height: 44px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  padding: 9px 10px;
+  text-align: left;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.account-menu-panel a:hover,
+.account-menu-panel button:hover {
+  color: var(--blue);
+  background: #f3f6ff;
+}
+.account-menu-panel form {
+  border-top: 1px solid var(--line);
+  margin-top: 5px;
+  padding-top: 5px;
+}
+.welcome-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.account-page {
+  max-width: 980px;
+}
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 28px;
+}
+.account-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 22px;
+}
+.account-card > svg {
+  color: var(--blue);
+}
+.account-card h2 {
+  margin-top: 12px;
+}
+.account-card p {
+  color: var(--muted);
+}
+.account-status,
+.account-error {
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.account-status {
+  background: #f3f6ff;
+  color: #33415c;
+}
+.account-error {
+  border: 1px solid #f0b4ae;
+  background: #fff2f0;
+  color: #8e1f16;
+}
+.account-signout {
+  margin-top: 24px;
+}
 .market-switcher {
   border: 1px solid var(--line) !important;
   border-radius: 10px;
@@ -683,6 +830,15 @@ h3 {
   .header-nav a,
   .header-nav button {
     padding: 0 8px;
+  }
+  .header-nav > .account-menu {
+    display: none;
+  }
+  .welcome-actions .identity-copy {
+    display: none;
+  }
+  .account-grid {
+    grid-template-columns: 1fr;
   }
   .hero {
     padding: 48px 0 34px;

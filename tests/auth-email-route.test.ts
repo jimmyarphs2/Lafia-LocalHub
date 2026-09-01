@@ -33,6 +33,10 @@ vi.mock("@/lib/supabase/admin", () => ({
 import { NextRequest } from "next/server";
 
 import { POST } from "@/app/auth/email/route";
+import {
+  AUTH_RETURN_COOKIE,
+  authReturnStateCookieName,
+} from "@/lib/auth/redirects";
 
 function emailRequest(values: Record<string, string>) {
   return new NextRequest("http://localhost:3000/auth/email", {
@@ -93,8 +97,22 @@ describe("email authentication browser flow", () => {
 
     expect(response.status).toBe(303);
     expect(location.pathname).toBe("/auth");
-    expect(location.searchParams.get("next")).toBe("/vendor/onboarding");
+    expect(location.searchParams.has("next")).toBe(false);
     expect(location.searchParams.get("notice")).toBe("check_email");
+    const emailRedirectTo = new URL(
+      authMocks.signInWithOtp.mock.calls[0]?.[0].options.emailRedirectTo,
+    );
+    const returnState = emailRedirectTo.searchParams.get("return_state");
+    const returnCookieName = authReturnStateCookieName(returnState);
+    expect(returnState).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(returnCookieName).toBeTruthy();
+    expect(response.cookies.get(returnCookieName!)?.value).toBeTruthy();
+    expect(response.cookies.get(returnCookieName!)?.httpOnly).toBe(true);
+    expect(response.cookies.get(returnCookieName!)?.sameSite).toBe("lax");
+    expect(response.cookies.get(returnCookieName!)?.maxAge).toBe(900);
+    expect(response.cookies.get(AUTH_RETURN_COOKIE)?.maxAge).toBe(0);
+    expect(emailRedirectTo.pathname).toBe("/auth/callback");
+    expect(emailRedirectTo.searchParams.has("next")).toBe(false);
     expect(location.href).not.toContain("merchant%40example.com");
     expect(location.href).not.toContain("merchant@example.com");
   });
@@ -129,7 +147,7 @@ describe("email authentication browser flow", () => {
 
     expect(response.status).toBe(303);
     expect(location.pathname).toBe("/auth");
-    expect(location.searchParams.get("next")).toBe("/");
+    expect(location.searchParams.has("next")).toBe(false);
     expect(location.searchParams.get("error")).toBe("auth_failed");
     expect(location.href).not.toContain("not-an-email");
     expect(authMocks.signInWithOtp).not.toHaveBeenCalled();

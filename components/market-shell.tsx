@@ -8,10 +8,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { BrandMark } from "./brand-mark";
+import { AccountMenu } from "./account-menu";
+import type { AuthIdentity } from "@/lib/auth/identity";
+import { getCurrentIdentity } from "@/lib/auth/identity";
 import type { Market } from "@/lib/market/config";
 import { isDemoMode } from "@/lib/market/public-url";
 import { MarketFooter } from "./market-footer";
-export function MarketShell({
+export async function MarketShell({
   market,
   children,
 }: {
@@ -19,6 +22,7 @@ export function MarketShell({
   children: React.ReactNode;
 }) {
   const demoMode = isDemoMode();
+  const identity = await getCurrentIdentity();
   return (
     <>
       <a className="skip-link" href="#main-content">
@@ -33,9 +37,7 @@ export function MarketShell({
             <Link className="market-switcher" href={`/${market.slug}`}>
               <MapPin aria-hidden="true" size={17} /> {market.name}
             </Link>
-            <Link aria-label="Sign in" href="/auth">
-              <UserRound aria-hidden="true" size={17} /> <span>Sign in</span>
-            </Link>
+            <AccountMenu identity={identity} marketSlug={market.slug} />
           </nav>
         </div>
       </header>
@@ -50,45 +52,19 @@ export function MarketShell({
       <main className="main" id="main-content">
         {children}
       </main>
-      <MobileCustomerNav market={market} />
+      <MobileCustomerNav identity={identity} market={market} />
       <MarketFooter market={market} />
     </>
   );
 }
 
-function AccountIntentButton({
+function MobileCustomerNav({
+  identity,
   market,
-  destination,
-  label,
-  icon: Icon,
 }: {
+  identity: AuthIdentity | null;
   market: Market;
-  destination: "profile";
-  label: string;
-  icon: typeof ClipboardList;
 }) {
-  return (
-    <form action="/auth/intent" method="post">
-      <input name="action" type="hidden" value="continue" />
-      <input name="return_to" type="hidden" value={`/${market.slug}`} />
-      <input
-        name="payload"
-        type="hidden"
-        value={JSON.stringify({
-          type: "account_navigation",
-          destination,
-          market: market.slug,
-        })}
-      />
-      <button type="submit">
-        <Icon aria-hidden="true" size={20} />
-        <span>{label}</span>
-      </button>
-    </form>
-  );
-}
-
-function MobileCustomerNav({ market }: { market: Market }) {
   return (
     <nav className="mobile-nav" aria-label="Customer navigation">
       <Link href={`/${market.slug}`}>
@@ -107,12 +83,16 @@ function MobileCustomerNav({ market }: { market: Market }) {
         <ClipboardList aria-hidden="true" size={20} />
         <span>Activity</span>
       </Link>
-      <AccountIntentButton
-        market={market}
-        destination="profile"
-        label="Profile"
-        icon={UserRound}
-      />
+      <Link
+        href={
+          identity
+            ? `/${market.slug}/account`
+            : `/auth?next=${encodeURIComponent(`/${market.slug}/account`)}`
+        }
+      >
+        <UserRound aria-hidden="true" size={20} />
+        <span>{identity ? "Account" : "Sign in"}</span>
+      </Link>
     </nav>
   );
 }
