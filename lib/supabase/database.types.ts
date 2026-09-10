@@ -2810,6 +2810,38 @@ export type Database = {
           vendor_responded_at: string | null;
         }[];
       };
+      list_public_catalog_businesses: {
+        Args: { p_limit?: number; p_market_id: string };
+        Returns: {
+          id: string;
+          location_id: string | null;
+          market_id: string;
+          metadata: Json;
+          name: string;
+          slug: string;
+          status: string;
+        }[];
+      };
+      list_public_catalog_listings: {
+        Args: { p_limit?: number; p_market_id: string };
+        Returns: {
+          attributes: Json;
+          business_id: string;
+          category_id: string | null;
+          currency_code: string;
+          description: string | null;
+          has_active_variant: boolean;
+          id: string;
+          is_orderable: boolean;
+          location_id: string | null;
+          market_id: string;
+          price_minor: number | null;
+          published_at: string | null;
+          slug: string;
+          status: Database["public"]["Enums"]["listing_status"];
+          title: string;
+        }[];
+      };
       list_my_referral_links: {
         Args: never;
         Returns: {

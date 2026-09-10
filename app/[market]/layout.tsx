@@ -18,7 +18,7 @@ export async function generateMetadata({
     title: `${market.name} directory`,
     description: isDemoMode()
       ? `Browse LocalHub’s fictional ${market.name} directory demonstration.`
-      : `Browse verified businesses in LocalHub’s ${market.name} directory.`,
+      : `Browse published businesses in LocalHub’s ${market.name} directory.`,
     alternates: { canonical: getPublicUrl(`/${market.slug}`) },
   };
 }

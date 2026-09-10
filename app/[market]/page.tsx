@@ -9,49 +9,73 @@ import { SearchForm } from "@/components/search-form";
 import { getCategoryRouteKey, getListingRouteKey } from "@/lib/catalog/data";
 import { getCatalogForMarket } from "@/lib/catalog/source";
 const examples = [
-  "I need a birthday cake around Shendam Road tomorrow for under ₦20,000.",
-  "Phone repair near me",
-  "I need a photographer for my introduction ceremony next Saturday. Budget ₦80,000.",
-  "Quiet restaurant for dinner tonight",
-  "30KVA generator around Lafia",
+  { label: "Birthday cake", query: "Birthday cake around Shendam Road" },
+  { label: "Phone repair", query: "Phone repair near me" },
+  { label: "Event photographer", query: "Event photographer in Lafia" },
+  { label: "Dinner tonight", query: "Quiet restaurant for dinner tonight" },
+  { label: "Generator hire", query: "30KVA generator around Lafia" },
 ];
+
+const featuredCategories = [
+  "food-restaurants",
+  "photography",
+  "equipment-hire",
+] as const;
 export default async function MarketHome({ params }: PageProps<"/[market]">) {
   const { market } = await params;
   const catalog = await getCatalogForMarket(market);
   const demoMode = catalog.source === "fictional-demo";
   const marketName =
     catalog.market?.name ?? (market === "lafia" ? "Lafia" : market);
+  const preferredListings = featuredCategories
+    .map((category) =>
+      catalog.listings.find((listing) => listing.category === category),
+    )
+    .filter((listing) => listing !== undefined);
+  const featuredListings = [
+    ...preferredListings,
+    ...catalog.listings.filter(
+      (listing) => !preferredListings.includes(listing),
+    ),
+  ].slice(0, 3);
   return (
-    <>
-      <section className="hero">
+    <div className="localhub-home">
+      <section className="hero localhub-home-hero">
+        {demoMode ? (
+          <div aria-hidden="true" className="home-hero-image" />
+        ) : null}
         <div className="container hero-content">
-          <h1>What do you need in {marketName}?</h1>
+          <p className="home-location-pill">Local discovery · {marketName}</p>
+          <h1>Your city, one request away.</h1>
           <p className="lede">
-            Describe a product, service, or business. LocalHub helps you explore
-            nearby{" "}
+            Find products, services, and local businesses—or simply describe
+            what you need. Browse{" "}
             {demoMode
-              ? "fictional directory examples"
-              : "verified local options"}
-            .
+              ? "fictional directory examples made for testing."
+              : "published options around you."}
           </p>
           <SearchForm market={market} />
-          <div className="query-examples">
+          <nav className="query-examples" aria-label="Quick searches">
             {examples.map((example) => (
               <Link
-                key={example}
-                href={`/${market}/search?q=${encodeURIComponent(example)}`}
+                key={example.label}
+                href={`/${market}/search?q=${encodeURIComponent(example.query)}`}
               >
                 <Sparkles aria-hidden="true" size={14} />
-                {example}
+                {example.label}
               </Link>
             ))}
-          </div>
+          </nav>
+          <p className="home-guest-note">
+            Browse freely. Sign in only when you’re ready to act.
+          </p>
         </div>
       </section>
-      <section className="section container">
+      <section className="section container home-categories">
         <div className="section-heading">
           <div>
-            <h2>Explore {marketName}</h2>
+            <p className="eyebrow">Explore the city</p>
+            <h2>What are you looking for?</h2>
             <p>
               Browse the {demoMode ? "demo" : "local"} directory by category.
             </p>
@@ -72,7 +96,7 @@ export default async function MarketHome({ params }: PageProps<"/[market]">) {
             <CategoryTiles market={market} categories={catalog.categories} />
           ) : (
             <div className="empty-state">
-              <h2>No verified categories are published yet.</h2>
+              <h2>No categories are published yet.</h2>
               <p>
                 Categories will appear here after they are published for this
                 market.
@@ -85,18 +109,15 @@ export default async function MarketHome({ params }: PageProps<"/[market]">) {
       </section>
       {catalog.state === "ready" ? (
         <section className="section section-alt">
-          <div className="container">
+          <div className="container home-listings">
             <div className="section-heading">
               <div>
-                <h2>
-                  {demoMode
-                    ? "Directory examples"
-                    : "Verified directory listings"}
-                </h2>
+                <p className="eyebrow">Discover in {marketName}</p>
+                <h2>{demoMode ? "Made for exploring" : "Published nearby"}</h2>
                 <p>
                   {demoMode
-                    ? "These entries are sample data, not popularity rankings."
-                    : "Only publishable, verified records appear here."}
+                    ? "Fictional examples across different local needs—not popularity rankings."
+                    : "Only publishable records appear here."}
                 </p>
               </div>
               <Link className="text-link" href={`/${market}/search`}>
@@ -104,7 +125,7 @@ export default async function MarketHome({ params }: PageProps<"/[market]">) {
               </Link>
             </div>
             <div className="listing-grid">
-              {catalog.listings.slice(0, 3).map((listing) => (
+              {featuredListings.map((listing) => (
                 <ListingCard
                   key={getListingRouteKey(listing)}
                   market={market}
@@ -113,9 +134,10 @@ export default async function MarketHome({ params }: PageProps<"/[market]">) {
               ))}
               {!catalog.listings.length ? (
                 <div className="empty-state">
-                  <h3>No verified listings are published yet.</h3>
+                  <h3>No listings are published yet.</h3>
                   <p>
-                    LocalHub will show a business here only after verification.
+                    LocalHub will show a business here only after it is
+                    published.
                   </p>
                 </div>
               ) : null}
@@ -123,6 +145,6 @@ export default async function MarketHome({ params }: PageProps<"/[market]">) {
           </div>
         </section>
       ) : null}
-    </>
+    </div>
   );
 }

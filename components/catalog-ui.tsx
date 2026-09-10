@@ -12,6 +12,7 @@ import {
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   getCategoryRouteKey,
   getListingRouteKey,
@@ -38,6 +39,12 @@ const categoryLabel = (category: string) =>
 const locationLabel = (location: string) =>
   location || "Location not published";
 
+const demoListingImages: Partial<Record<string, string>> = {
+  "food-restaurants": "/images/localhub-demo-cake.webp",
+  photography: "/images/localhub-demo-photographer.webp",
+  "equipment-hire": "/images/localhub-demo-electrical.webp",
+};
+
 export function CatalogStateNotice({
   state,
   subject = "directory",
@@ -51,13 +58,13 @@ export function CatalogStateNotice({
     <div className="empty-state" data-catalog-state={state}>
       <h2>
         {unpublished
-          ? `No verified ${subject} is published for this market yet.`
-          : `The verified ${subject} is temporarily unavailable.`}
+          ? `No ${subject} is published for this market yet.`
+          : `The published ${subject} is temporarily unavailable.`}
       </h2>
       <p>
         {unpublished
           ? "LocalHub will show records here only after the market and its directory data are published."
-          : "No fictional, cached, or unverified business records are substituted when the live catalog cannot be read."}
+          : "No fictional or cached business records are substituted when the live catalog cannot be read."}
       </p>
     </div>
   );
@@ -95,6 +102,9 @@ export function ListingCard({
   listing: Listing;
 }) {
   const isFictionalDemo = listing.provenance?.kind === "fictional-demo";
+  const demoImage = isFictionalDemo
+    ? demoListingImages[listing.category]
+    : undefined;
 
   return (
     <article className="listing-card">
@@ -102,7 +112,16 @@ export function ListingCard({
         aria-hidden="true"
         className="listing-visual"
         style={{ "--listing-color": listing.color } as React.CSSProperties}
-      />
+      >
+        {demoImage ? (
+          <Image
+            alt=""
+            fill
+            sizes="(max-width: 760px) 42vw, (max-width: 1200px) 33vw, 380px"
+            src={demoImage}
+          />
+        ) : null}
+      </div>
       <div className="listing-content">
         <p className="listing-kind">{categoryLabel(listing.category)}</p>
         <h3>

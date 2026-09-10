@@ -1,7 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { BrandMark } from "@/components/brand-mark";
 import styles from "@/components/admin/business-triage.module.css";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  alternates: { canonical: null },
+};
 
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (

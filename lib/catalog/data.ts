@@ -21,7 +21,7 @@ export type DemoProvenance = {
 export type LiveProvenance = {
   kind: "live";
   source: "supabase";
-  verifiedBusiness: true;
+  verifiedBusiness: false;
 };
 
 export type CatalogProvenance = DemoProvenance | LiveProvenance;
@@ -101,7 +101,10 @@ export const FICTIONAL_DEMO_PROVENANCE = Object.freeze({
 export const LIVE_SUPABASE_PROVENANCE = Object.freeze({
   kind: "live",
   source: "supabase",
-  verifiedBusiness: true,
+  // Public catalog reads establish publication eligibility, not business KYC
+  // or any other verification status. Keep this fail-closed until an
+  // authoritative verification model and evidence contract exist.
+  verifiedBusiness: false,
 } satisfies LiveProvenance);
 
 export const categories: readonly Category[] = [

@@ -62,6 +62,11 @@ const AVAILABILITY_WINDOWS = new Set<AvailabilityWindow>([
 type TableRow<Name extends keyof Database["public"]["Tables"]> =
   Database["public"]["Tables"][Name]["Row"];
 
+type FunctionRow<Name extends keyof Database["public"]["Functions"]> =
+  Database["public"]["Functions"][Name]["Returns"] extends readonly (infer Row)[]
+    ? Row
+    : never;
+
 export type PublicMarketRow = Pick<
   TableRow<"markets">,
   | "id"
@@ -88,40 +93,9 @@ export type PublicLocationRow = Pick<
   "id" | "market_id" | "slug" | "name" | "latitude" | "longitude" | "is_active"
 >;
 
-export type PublicBusinessRow = Pick<
-  TableRow<"businesses">,
-  | "id"
-  | "market_id"
-  | "location_id"
-  | "slug"
-  | "name"
-  | "address_text"
-  | "metadata"
-  | "status"
->;
+export type PublicBusinessRow = FunctionRow<"list_public_catalog_businesses">;
 
-export type PublicListingRow = Pick<
-  TableRow<"listings">,
-  | "id"
-  | "market_id"
-  | "business_id"
-  | "category_id"
-  | "location_id"
-  | "slug"
-  | "title"
-  | "description"
-  | "attributes"
-  | "is_orderable"
-  | "price_minor"
-  | "currency_code"
-  | "published_at"
-  | "status"
-> & {
-  listing_variants: readonly Pick<
-    TableRow<"listing_variants">,
-    "id" | "is_active"
-  >[];
-};
+export type PublicListingRow = FunctionRow<"list_public_catalog_listings">;
 
 export type PublicCatalogMarket = {
   id: string;
@@ -453,7 +427,9 @@ export function mapPublicCatalogRows(
       listing.published_at !== null &&
       SLUG_PATTERN.test(listing.slug) &&
       listing.market_id === market.id &&
-      activeBusinessIds.has(listing.business_id),
+      activeBusinessIds.has(listing.business_id) &&
+      listing.category_id !== null &&
+      activeCategoryIds.has(listing.category_id),
   );
 
   const vendors: Vendor[] = activeBusinesses.map((business) => {
@@ -472,7 +448,7 @@ export function mapPublicCatalogRows(
         publicListingRows,
         categoryById,
       ),
-      location: location?.name ?? business.address_text?.trim() ?? "",
+      location: location?.name ?? "",
       coordinates: location?.coordinates,
       serviceAreas: metadata.serviceAreas,
       capabilityTags: metadata.capabilityTags,
@@ -506,7 +482,7 @@ export function mapPublicCatalogRows(
       currencyCode === market.currencyCode &&
       priceMinor !== undefined &&
       priceMinor > 0 &&
-      !listing.listing_variants.some((variant) => variant.is_active);
+      listing.has_active_variant === false;
     const priceRangeNaira =
       currencyCode === "NGN" && priceMinor !== undefined
         ? { min: priceMinor / 100, max: priceMinor / 100 }
@@ -614,16 +590,10 @@ async function loadPublicCatalog(
         .order("name", { ascending: true })
         .order("id", { ascending: true })
         .limit(PUBLIC_CATALOG_LIMITS.locations),
-      client
-        .from("businesses")
-        .select(
-          "id,market_id,location_id,slug,name,address_text,metadata,status",
-        )
-        .eq("market_id", market.id)
-        .eq("status", "active")
-        .order("name", { ascending: true })
-        .order("id", { ascending: true })
-        .limit(PUBLIC_CATALOG_LIMITS.vendors),
+      client.rpc("list_public_catalog_businesses", {
+        p_market_id: market.id,
+        p_limit: PUBLIC_CATALOG_LIMITS.vendors,
+      }),
     ]);
 
     if (categoryResult.error || locationResult.error || businessResult.error) {
@@ -633,7 +603,6 @@ async function loadPublicCatalog(
     const categoryRows = categoryResult.data ?? [];
     const businessRows = businessResult.data ?? [];
     const categoryIds = categoryRows.map((category) => category.id);
-    const businessIds = businessRows.map((business) => business.id);
 
     const [aliasResult, listingResult] = await Promise.all([
       categoryIds.length > 0
@@ -646,21 +615,11 @@ async function loadPublicCatalog(
             .order("id", { ascending: true })
             .limit(PUBLIC_CATALOG_LIMITS.aliases)
         : Promise.resolve({ data: [], error: null }),
-      businessIds.length > 0
-        ? client
-            .from("listings")
-            .select(
-              "id,market_id,business_id,category_id,location_id,slug,title,description,attributes,is_orderable,price_minor,currency_code,published_at,status,listing_variants(id,is_active)",
-            )
-            .eq("market_id", market.id)
-            .eq("status", "active")
-            .not("published_at", "is", null)
-            .in("business_id", businessIds)
-            .eq("listing_variants.is_active", true)
-            .order("published_at", { ascending: false })
-            .order("id", { ascending: true })
-            .limit(1, { referencedTable: "listing_variants" })
-            .limit(PUBLIC_CATALOG_LIMITS.listings)
+      businessRows.length > 0
+        ? client.rpc("list_public_catalog_listings", {
+            p_market_id: market.id,
+            p_limit: PUBLIC_CATALOG_LIMITS.listings,
+          })
         : Promise.resolve({ data: [], error: null }),
     ]);
 

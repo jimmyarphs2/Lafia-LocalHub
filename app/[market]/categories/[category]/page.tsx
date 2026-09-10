@@ -27,7 +27,7 @@ export async function generateMetadata({
         title: `${category.name} in ${market}`,
         description:
           category.description ||
-          `Browse verified ${category.name.toLowerCase()} listings in ${market}.`,
+          `Browse published ${category.name.toLowerCase()} listings in ${market}.`,
         alternates: {
           canonical: getPublicUrl(`/${market}/categories/${slug}`),
         },
@@ -74,7 +74,7 @@ export default async function CategoryPage({
             {category.description || `Browse ${category.name.toLowerCase()}.`}{" "}
             {demoMode
               ? "All entries are fictional demo data."
-              : "Only verified, publishable records are shown."}
+              : "Only publishable records are shown."}
           </p>
           <SearchForm market={market} />
         </div>
@@ -88,13 +88,13 @@ export default async function CategoryPage({
         ) : (
           <div className="empty-state">
             <h2>
-              No {demoMode ? "fictional demo" : "verified"} listings in this
+              No {demoMode ? "fictional demo" : "published"} listings in this
               category yet.
             </h2>
             <p>
               {demoMode
                 ? "The current demo directory does not make any live availability claims."
-                : "This category is ready for future verified records. No unverified business is shown in the live directory."}
+                : "This category is ready for future published records. No additional business is shown in the live directory."}
             </p>
           </div>
         )}

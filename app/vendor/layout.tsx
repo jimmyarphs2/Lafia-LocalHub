@@ -1,10 +1,16 @@
 import { ArrowLeft } from "lucide-react";
+import type { Metadata } from "next";
 
 import { BrandMark } from "@/components/brand-mark";
 import { AccountMenu } from "@/components/account-menu";
 import { DraftNavigationLink } from "@/components/vendor/draft-navigation-link";
 import styles from "@/components/vendor/vendor-onboarding.module.css";
 import { getCurrentIdentity } from "@/lib/auth/identity";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+  alternates: { canonical: null },
+};
 
 export default async function VendorLayout({
   children,

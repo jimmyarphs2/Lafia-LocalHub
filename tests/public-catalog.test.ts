@@ -109,7 +109,6 @@ const business: PublicBusinessRow = {
   location_id: locationId,
   slug: "lafia-bakes",
   name: "Lafia Bakes",
-  address_text: "12 Shendam Road",
   metadata: {
     summary: "Made-to-order cakes.",
     capabilityTags: ["cake", "catering"],
@@ -138,7 +137,7 @@ const listing: PublicListingRow = {
   currency_code: "NGN",
   published_at: "2026-08-29T08:00:00.000Z",
   status: "active",
-  listing_variants: [],
+  has_active_variant: false,
 };
 
 function rows(overrides: Partial<PublicCatalogRows> = {}): PublicCatalogRows {
@@ -248,12 +247,12 @@ describe("public catalog provider boundary", () => {
       markets: queryResult({ data: market, error: null }),
       categories: queryResult({ data: [], error: null }),
       market_locations: queryResult({ data: [], error: null }),
-      businesses: queryResult({ data: [], error: null }),
     };
     const from = vi.fn(
       (table: keyof typeof tableQueries) => tableQueries[table],
     );
-    mocks.createClient.mockReturnValue({ from });
+    const rpc = vi.fn(() => queryResult({ data: [], error: null }));
+    mocks.createClient.mockReturnValue({ from, rpc });
 
     await expect(getPublicCatalog("lafia")).resolves.toEqual({
       state: "ready",
@@ -273,7 +272,13 @@ describe("public catalog provider boundary", () => {
       listings: [],
     });
     expect(from).not.toHaveBeenCalledWith("category_aliases");
+    expect(from).not.toHaveBeenCalledWith("businesses");
     expect(from).not.toHaveBeenCalledWith("listings");
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith("list_public_catalog_businesses", {
+      p_market_id: marketId,
+      p_limit: 250,
+    });
   });
 
   it("loads a populated market with bounded batch queries and explicit visibility filters", async () => {
@@ -281,14 +286,23 @@ describe("public catalog provider boundary", () => {
       markets: queryResult({ data: market, error: null }),
       categories: queryResult({ data: [category], error: null }),
       market_locations: queryResult({ data: [location], error: null }),
-      businesses: queryResult({ data: [business], error: null }),
       category_aliases: queryResult({ data: [alias], error: null }),
-      listings: queryResult({ data: [listing], error: null }),
+    };
+    const rpcQueries = {
+      list_public_catalog_businesses: queryResult({
+        data: [business],
+        error: null,
+      }),
+      list_public_catalog_listings: queryResult({
+        data: [listing],
+        error: null,
+      }),
     };
     const from = vi.fn(
       (table: keyof typeof tableQueries) => tableQueries[table],
     );
-    mocks.createClient.mockReturnValue({ from });
+    const rpc = vi.fn((name: keyof typeof rpcQueries) => rpcQueries[name]);
+    mocks.createClient.mockReturnValue({ from, rpc });
 
     const snapshot = await getPublicCatalog("lafia");
 
@@ -298,10 +312,10 @@ describe("public catalog provider boundary", () => {
       "markets",
       "categories",
       "market_locations",
-      "businesses",
       "category_aliases",
-      "listings",
     ]);
+    expect(from).not.toHaveBeenCalledWith("businesses");
+    expect(from).not.toHaveBeenCalledWith("listings");
     expect(tableQueries.markets.eq).toHaveBeenCalledWith("slug", "lafia");
     expect(tableQueries.markets.eq).toHaveBeenCalledWith("is_active", true);
     expect(tableQueries.markets.limit).toHaveBeenCalledWith(1);
@@ -327,16 +341,6 @@ describe("public catalog provider boundary", () => {
       ["name", { ascending: true }],
       ["id", { ascending: true }],
     ]);
-    expect(tableQueries.businesses.eq).toHaveBeenCalledWith(
-      "market_id",
-      marketId,
-    );
-    expect(tableQueries.businesses.eq).toHaveBeenCalledWith("status", "active");
-    expect(tableQueries.businesses.limit).toHaveBeenCalledWith(250);
-    expect(tableQueries.businesses.order.mock.calls).toEqual([
-      ["name", { ascending: true }],
-      ["id", { ascending: true }],
-    ]);
     expect(tableQueries.category_aliases.in).toHaveBeenCalledWith(
       "category_id",
       [categoryId],
@@ -346,34 +350,57 @@ describe("public catalog provider boundary", () => {
       ["alias", { ascending: true }],
       ["id", { ascending: true }],
     ]);
-    expect(tableQueries.listings.eq).toHaveBeenCalledWith(
-      "market_id",
-      marketId,
-    );
-    expect(tableQueries.listings.select).toHaveBeenCalledWith(
-      expect.stringContaining("is_orderable"),
-    );
-    expect(tableQueries.listings.eq).toHaveBeenCalledWith("status", "active");
-    expect(tableQueries.listings.not).toHaveBeenCalledWith(
-      "published_at",
-      "is",
-      null,
-    );
-    expect(tableQueries.listings.in).toHaveBeenCalledWith("business_id", [
-      businessId,
+    expect(rpc.mock.calls).toEqual([
+      [
+        "list_public_catalog_businesses",
+        { p_market_id: marketId, p_limit: 250 },
+      ],
+      ["list_public_catalog_listings", { p_market_id: marketId, p_limit: 500 }],
     ]);
-    expect(tableQueries.listings.eq).toHaveBeenCalledWith(
-      "listing_variants.is_active",
-      true,
+  });
+
+  it("fails closed when either public projection RPC fails", async () => {
+    const tableQueries = {
+      markets: queryResult({ data: market, error: null }),
+      categories: queryResult({ data: [category], error: null }),
+      market_locations: queryResult({ data: [location], error: null }),
+      category_aliases: queryResult({ data: [alias], error: null }),
+    };
+    const from = vi.fn(
+      (table: keyof typeof tableQueries) => tableQueries[table],
     );
-    expect(tableQueries.listings.limit).toHaveBeenCalledWith(1, {
-      referencedTable: "listing_variants",
+    const failedBusinessesRpc = vi.fn(() =>
+      queryResult({ data: null, error: { message: "projection unavailable" } }),
+    );
+    mocks.createClient.mockReturnValueOnce({
+      from,
+      rpc: failedBusinessesRpc,
     });
-    expect(tableQueries.listings.limit).toHaveBeenCalledWith(500);
-    expect(tableQueries.listings.order.mock.calls).toEqual([
-      ["published_at", { ascending: false }],
-      ["id", { ascending: true }],
-    ]);
+
+    await expect(getPublicCatalog("lafia")).resolves.toMatchObject({
+      state: "unavailable",
+    });
+    expect(failedBusinessesRpc).toHaveBeenCalledOnce();
+
+    const rpcQueries = {
+      list_public_catalog_businesses: queryResult({
+        data: [business],
+        error: null,
+      }),
+      list_public_catalog_listings: queryResult({
+        data: null,
+        error: { message: "projection unavailable" },
+      }),
+    };
+    const failedListingsRpc = vi.fn(
+      (name: keyof typeof rpcQueries) => rpcQueries[name],
+    );
+    mocks.createClient.mockReturnValueOnce({ from, rpc: failedListingsRpc });
+
+    await expect(getPublicCatalog("lafia")).resolves.toMatchObject({
+      state: "unavailable",
+    });
+    expect(failedListingsRpc).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -399,7 +426,7 @@ describe("public catalog mapping", () => {
       provenance: {
         kind: "live",
         source: "supabase",
-        verifiedBusiness: true,
+        verifiedBusiness: false,
       },
     });
     expect(mapped?.listings[0]).toMatchObject({
@@ -420,7 +447,7 @@ describe("public catalog mapping", () => {
       provenance: {
         kind: "live",
         source: "supabase",
-        verifiedBusiness: true,
+        verifiedBusiness: false,
       },
     });
     expect(mapped?.listings[0].provenance.kind).not.toBe("fictional-demo");
@@ -455,13 +482,18 @@ describe("public catalog mapping", () => {
         listings: [
           {
             ...listing,
-            listing_variants: [
-              {
-                id: "99999999-9999-4999-8999-999999999999",
-                is_active: true,
-              },
-            ],
+            has_active_variant: true,
           },
+        ],
+      }),
+    );
+    const malformedVariantSignal = mapPublicCatalogRows(
+      rows({
+        listings: [
+          {
+            ...listing,
+            has_active_variant: undefined,
+          } as unknown as PublicListingRow,
         ],
       }),
     );
@@ -470,8 +502,9 @@ describe("public catalog mapping", () => {
     expect(missingPrice?.listings[0].isOrderable).toBe(false);
     expect(zeroPrice?.listings[0].isOrderable).toBe(false);
     expect(foreignCurrency?.listings[0].isOrderable).toBe(false);
-    expect(missingCategory?.listings[0].isOrderable).toBe(false);
+    expect(missingCategory?.listings).toEqual([]);
     expect(activeVariant?.listings[0].isOrderable).toBe(false);
+    expect(malformedVariantSignal?.listings[0].isOrderable).toBe(false);
   });
 
   it("cannot surface inactive or route-unsafe catalog records", () => {
@@ -508,6 +541,12 @@ describe("public catalog mapping", () => {
       id: "96666666-6666-4666-8666-666666666666",
       business_id: hiddenBusiness.id,
       slug: "hidden-business-listing",
+    };
+    const hiddenCategoryListing = {
+      ...listing,
+      id: "97666666-6666-4666-8666-666666666666",
+      category_id: hiddenCategory.id,
+      slug: "hidden-category-listing",
     };
     const crossMarketBusiness = {
       ...business,
@@ -557,6 +596,7 @@ describe("public catalog mapping", () => {
           draftListing,
           unpublishedListing,
           hiddenBusinessListing,
+          hiddenCategoryListing,
           unsafeListing,
           unsafeBusinessListing,
         ],
@@ -628,5 +668,46 @@ describe("public catalog mapping", () => {
     expect(mapped?.listings[0].priceMinor).toBeUndefined();
     expect(mapped?.listings[0].priceRangeNaira).toBeUndefined();
     expect(mapped?.listings[0].priceNote).toBeUndefined();
+  });
+
+  it("maps only allowlisted projection JSON and does not fall back to a source address", () => {
+    const projectedBusiness: PublicBusinessRow = {
+      ...business,
+      location_id: null,
+      metadata: {
+        summary: "Public summary",
+        serviceAreas: ["Lafia"],
+        privatePhone: "+2348000000000",
+        legalName: "Private Legal Name Ltd",
+      },
+    };
+    const projectedListing: PublicListingRow = {
+      ...listing,
+      location_id: null,
+      attributes: {
+        capabilityTags: ["cake"],
+        internalCostMinor: 400_000,
+        supplierNote: "private supplier note",
+      },
+    };
+
+    const mapped = mapPublicCatalogRows(
+      rows({
+        businesses: [projectedBusiness],
+        listings: [projectedListing],
+      }),
+    );
+    const serialized = JSON.stringify(mapped);
+
+    expect(mapped?.vendors[0]).toMatchObject({
+      location: "",
+      summary: "Public summary",
+      serviceAreas: ["Lafia"],
+    });
+    expect(mapped?.listings[0]).toMatchObject({ capabilityTags: ["cake"] });
+    expect(serialized).not.toContain("+2348000000000");
+    expect(serialized).not.toContain("Private Legal Name Ltd");
+    expect(serialized).not.toContain("private supplier note");
+    expect(serialized).not.toContain("400000");
   });
 });

@@ -9,7 +9,7 @@ export function MarketFooter({ market }: { market: Market }) {
         <p>
           {demoMode
             ? `${market.name} is a fictional launch-market demonstration. No live availability, pricing, or business claims are shown.`
-            : `Only verified, publishable ${market.name} records are shown.`}
+            : `Only publishable ${market.name} records are shown.`}
         </p>
       </div>
     </footer>
