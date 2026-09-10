@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
 const checks = [
+  ["typegen", ["node_modules/next/dist/bin/next", "typegen"]],
   ["typecheck", ["node_modules/typescript/bin/tsc", "--noEmit"]],
   ["lint", ["scripts/run-eslint.mjs"]],
   ["format", ["node_modules/prettier/bin/prettier.cjs", "--check", "."]],
