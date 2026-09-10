@@ -38,7 +38,11 @@ export type MerchantOnboardingStalledInput = {
   occurredAt?: string;
 };
 
-function requiredText(value: unknown, field: string, maxLength: number): string {
+function requiredText(
+  value: unknown,
+  field: string,
+  maxLength: number,
+): string {
   if (typeof value !== "string") {
     throw new TypeError(`${field} must be a string`);
   }
@@ -50,7 +54,7 @@ function requiredText(value: unknown, field: string, maxLength: number): string 
   if (normalized.length > maxLength) {
     throw new RangeError(`${field} is too long`);
   }
-  if (/[\\r\\n]/u.test(normalized)) {
+  if (/[\r\n]/u.test(normalized)) {
     throw new TypeError(`${field} must not contain line breaks`);
   }
 
