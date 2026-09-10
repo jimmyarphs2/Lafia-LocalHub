@@ -1,5 +1,3 @@
-import "server-only";
-
 export const LOCALHUB_ORBIT_COMPANY_ID = "localhub" as const;
 export const MERCHANT_ONBOARDING_STALLED_EVENT =
   "localhub.merchant.onboarding_stalled" as const;
