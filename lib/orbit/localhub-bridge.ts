@@ -103,12 +103,19 @@ export function toMerchantOnboardingStalledEvent(
     "sourceEventId",
     MAX_SOURCE_EVENT_ID_LENGTH,
   );
-  const nextStep = requiredText(input?.nextStep, "nextStep", MAX_NEXT_STEP_LENGTH);
+  const nextStep = requiredText(
+    input?.nextStep,
+    "nextStep",
+    MAX_NEXT_STEP_LENGTH,
+  );
   const recipient = optionalRecipient(input?.recipient);
   const hoursStalled = stalledHours(input?.hoursStalled);
 
   const payload = Object.freeze({ hoursStalled, recipient, nextStep });
-  const source = Object.freeze({ system: "localhub" as const, eventId: sourceEventId });
+  const source = Object.freeze({
+    system: "localhub" as const,
+    eventId: sourceEventId,
+  });
   const subject = Object.freeze({ aggregateId: merchantId });
 
   return Object.freeze({
