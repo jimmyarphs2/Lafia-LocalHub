@@ -76,6 +76,37 @@ export async function loadOnboardingDraft(
     : { ok: false, reason: "database_unavailable" };
 }
 
+export type LoadOnboardingDraftsResult =
+  | { ok: true; drafts: OnboardingDraftRecord[] }
+  | { ok: false; reason: "database_unavailable" };
+
+export async function loadOnboardingDrafts(
+  client: SupabaseClient,
+  limit = 500,
+): Promise<LoadOnboardingDraftsResult> {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 5000) {
+    throw new RangeError("limit must be an integer between 1 and 5000");
+  }
+
+  const { data, error } = await client
+    .from("business_onboarding_drafts")
+    .select("business_id, step, data, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !Array.isArray(data)) {
+    return { ok: false, reason: "database_unavailable" };
+  }
+
+  return {
+    ok: true,
+    drafts: data.flatMap((row) => {
+      const draft = parseDraftRow(row);
+      return draft ? [draft] : [];
+    }),
+  };
+}
+
 async function findLaunchMarketId(
   client: SupabaseClient,
   marketSlug: string,
