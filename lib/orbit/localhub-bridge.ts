@@ -142,12 +142,10 @@ export function createLocalHubOrbitBridge(sink: OrbitEventSink) {
   }
 
   return Object.freeze({
-    emitMerchantOnboardingStalled(
+    async emitMerchantOnboardingStalled(
       input: MerchantOnboardingStalledInput,
     ): Promise<unknown> {
-      return Promise.resolve(
-        sink.ingest(toMerchantOnboardingStalledEvent(input)),
-      );
+      return sink.ingest(toMerchantOnboardingStalledEvent(input));
     },
   });
 }

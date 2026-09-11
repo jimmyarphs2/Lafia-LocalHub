@@ -60,6 +60,23 @@ describe("LocalHub–ORBIT bridge", () => {
     expect(event.payload.recipient).toBeNull();
   });
 
+  it("turns synchronous sink failures into promise rejections", async () => {
+    const bridge = createLocalHubOrbitBridge({
+      ingest() {
+        throw new Error("admission failed");
+      },
+    });
+
+    await expect(
+      bridge.emitMerchantOnboardingStalled({
+        merchantId: "merchant-123",
+        hoursStalled: 25,
+        nextStep: "Complete your first listing",
+        sourceEventId: "onboarding-123",
+      }),
+    ).rejects.toThrow("admission failed");
+  });
+
   it.each([
     ["empty merchant id", { merchantId: " " }],
     ["negative stalled hours", { hoursStalled: -1 }],

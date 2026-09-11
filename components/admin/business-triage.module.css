@@ -1,5 +1,9 @@
 .route {
   min-height: 100vh;
+  --ink: #071a38;
+  --muted: #5b687d;
+  --line: #dce3ee;
+  --blue: #2350f4;
   background: #f5f7fb;
   color: var(--ink);
 }

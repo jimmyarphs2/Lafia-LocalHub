@@ -2,6 +2,7 @@
   min-height: 100svh;
   padding: 22px 18px 42px;
   background: #f7f9fd;
+  color: #071a38;
 }
 .header {
   width: min(100%, 980px);
