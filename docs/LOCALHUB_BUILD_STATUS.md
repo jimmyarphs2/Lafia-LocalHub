@@ -1,5 +1,7 @@
 # LocalHub build status
 
+> **Current-state supersession — 2026-09-02:** The evidence-backed visual pre-build and stability checkpoint is [localhub-current-state-report.md](./localhub-current-state-report.md). It supersedes this document's older claims that the production domain and Google OAuth lifecycle are incomplete. The authoritative hosted database still has 37 migrations; local migration 038 remains unapplied. This detailed document otherwise remains the historical Step 27/early-Step 28 record until the next full status reconciliation.
+
 **Last updated:** 2026-08-31
 **Branch:** `codex/localhub-production`
 **Product:** LocalHub

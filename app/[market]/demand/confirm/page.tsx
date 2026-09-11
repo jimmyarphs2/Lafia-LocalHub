@@ -75,7 +75,7 @@ export default async function DemandConfirmationPage({
           not placed in the demand record.
         </p>
         <p>
-          This optional marker helps establish that verified supply was absent.
+          This optional marker helps establish that published supply was absent.
           It does not guarantee that a vendor will join, respond, or fulfil the
           need.
         </p>

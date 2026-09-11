@@ -79,7 +79,7 @@ export default async function SearchPage({
             <p>About this search</p>
             <span className="listing-meta">
               Natural-language terms help filter the{" "}
-              {demoMode ? "fictional demo" : "verified"} directory. Matching
+              {demoMode ? "fictional demo" : "published"} directory. Matching
               uses deterministic category, availability, approximate distance,
               and price-range rules. It does not call AI or live maps.
             </span>
@@ -90,7 +90,7 @@ export default async function SearchPage({
             <>
               <p className="listing-meta">
                 {results.length} matching{" "}
-                {demoMode ? "fictional demo" : "verified"}{" "}
+                {demoMode ? "fictional demo" : "published"}{" "}
                 {results.length === 1 ? "listing" : "listings"}.
               </p>
               <h2 className="results-heading">
@@ -101,7 +101,7 @@ export default async function SearchPage({
                   <p className="match-method-note">
                     Match scores are whole-number product signals, not
                     probabilities or endorsements. Merchant ratings are excluded
-                    because no verified rating evidence exists
+                    because no rating evidence is published
                     {demoMode ? " in the demo data" : ""}; remaining evidence
                     weights are renormalized.
                   </p>
@@ -121,17 +121,17 @@ export default async function SearchPage({
             <div className="empty-state">
               <Lightbulb aria-hidden="true" size={30} color="#2350f4" />
               <h2>
-                We do not have a matching {demoMode ? "demo" : "verified"}{" "}
+                We do not have a matching {demoMode ? "demo" : "published"}{" "}
                 listing yet.
               </h2>
               <p>
                 {!raw
-                  ? "No verified listings are published in this market yet."
+                  ? "No listings are published in this market yet."
                   : demandPath
                     ? "This recognized category currently has no published supply. You can explicitly record one private daily category-gap marker after signing in."
                     : demoMode
                       ? "Fictional demo searches never create operational demand records."
-                      : "Try a broader category or fewer details. LocalHub records a supply gap only when one verified category has no published listing."}
+                      : "Try a broader category or fewer details. LocalHub records a supply gap only when one published category has no published listing."}
               </p>
               {demandPath ? (
                 <a

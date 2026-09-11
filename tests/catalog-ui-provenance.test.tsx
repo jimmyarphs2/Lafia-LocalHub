@@ -20,6 +20,7 @@ describe("catalog UI provenance", () => {
 
     expect(markup).toContain("Directory listing");
     expect(markup).not.toContain("Fictional demo listing");
+    expect(markup).not.toContain("localhub-demo-cake.webp");
   });
 
   it("uses the collision-free live route key while preserving the record slug", () => {
@@ -57,5 +58,6 @@ describe("catalog UI provenance", () => {
     );
 
     expect(markup).toContain("Fictional demo listing");
+    expect(markup).toContain("localhub-demo-cake.webp");
   });
 });

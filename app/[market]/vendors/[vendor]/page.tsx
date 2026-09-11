@@ -110,7 +110,7 @@ export default async function VendorPage({
         <ListingRows market={market} listings={items} query={searchQuery} />
       ) : (
         <div className="empty-state">
-          <h3>No verified listings are published for this vendor yet.</h3>
+          <h3>No listings are published for this vendor yet.</h3>
           <p>
             This profile remains visible, but LocalHub will not invent or
             substitute listing details that the vendor has not published.

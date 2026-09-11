@@ -1,5 +1,6 @@
 import {
   ClipboardList,
+  Bell,
   Home,
   MapPin,
   Search,
@@ -14,6 +15,7 @@ import { getCurrentIdentity } from "@/lib/auth/identity";
 import type { Market } from "@/lib/market/config";
 import { isDemoMode } from "@/lib/market/public-url";
 import { MarketFooter } from "./market-footer";
+import { ThemeSwitcher } from "./theme-switcher";
 export async function MarketShell({
   market,
   children,
@@ -32,10 +34,25 @@ export async function MarketShell({
         <div className="container header-row">
           <BrandMark />
           <nav className="header-nav" aria-label="Primary navigation">
-            <Link href={`/${market.slug}`}>Explore</Link>
-            <Link href={`/${market.slug}/activity`}>Activity</Link>
+            <Link className="desktop-nav-link" href={`/${market.slug}`}>
+              Explore
+            </Link>
+            <Link
+              className="desktop-nav-link"
+              href={`/${market.slug}/activity`}
+            >
+              Activity
+            </Link>
             <Link className="market-switcher" href={`/${market.slug}`}>
               <MapPin aria-hidden="true" size={17} /> {market.name}
+            </Link>
+            <ThemeSwitcher />
+            <Link
+              aria-label="View activity"
+              className="header-icon-link"
+              href={`/${market.slug}/activity`}
+            >
+              <Bell aria-hidden="true" size={19} />
             </Link>
             <AccountMenu identity={identity} marketSlug={market.slug} />
           </nav>

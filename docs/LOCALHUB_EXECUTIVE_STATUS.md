@@ -1,5 +1,7 @@
 # LocalHub executive status
 
+> **Current-state supersession — 2026-09-02:** See [localhub-current-state-report.md](./localhub-current-state-report.md) for the verified production-domain/auth checkpoint, fresh 121-file/713-test quality result, complete 21-screen reference audit, and visual-reconstruction gate. Statements below that describe domain, deployment, or hosted Google OAuth as incomplete are historical. The authoritative hosted database still has 37 migrations; local migration 038 remains unapplied.
+
 **Snapshot date:** 2026-08-31 (Africa/Lagos)
 **Evidence rule:** This is the non-disruptive Founder checkpoint refreshed after hosted migration 037, its full rollback-only post-apply probe, independent security/React/TypeScript review, and the fresh full quality/build run. It distinguishes live evidence from source/test evidence and never treats demo fixtures, an empty hosted database, a compile-only origin, or dormant provider scaffolding as launch proof.
 
