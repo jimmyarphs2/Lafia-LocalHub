@@ -100,7 +100,7 @@ export type GovernedWorkflowResult = {
   event: StoredEvent;
   duplicate: boolean;
   run: StoredRun;
-  decision: StoredDecision;
+  decision: StoredDecision | null;
   execution: StoredExecution | null;
   memory: Record<string, unknown> | null;
 };
