@@ -1,0 +1,43 @@
+name: Regenerate private package lockfile
+
+on:
+  push:
+    branches:
+      - codex/localhub-orbit-package-consumer
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+
+      - name: Regenerate lockfile
+        run: npm install --package-lock-only --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit lockfile and remove helper workflow
+        run: |
+          git add package-lock.json
+          git rm .github/workflows/regenerate-private-package-lockfile.yml
+          if git diff --cached --quiet; then
+            echo "No lockfile changes were required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: regenerate lockfile for private ORBIT package"
+          git push
