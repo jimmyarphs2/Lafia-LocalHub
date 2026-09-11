@@ -5,10 +5,7 @@ const DEFAULT_STALLED_HOURS = 24;
 const MAX_STALLED_HOURS = 8760;
 const HOUR_MS = 60 * 60 * 1000;
 
-const NEXT_STEP_BY_STEP: Record<
-  OnboardingDraftRecord["step"],
-  string
-> = {
+const NEXT_STEP_BY_STEP: Record<OnboardingDraftRecord["step"], string> = {
   business: "Choose a category",
   category: "Add your business profile",
   profile: "Tell us where you operate",
@@ -23,7 +20,8 @@ export type StalledOnboardingDetectorOptions = {
 };
 
 function validDate(value: Date | string): Date | null {
-  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+  const date =
+    value instanceof Date ? new Date(value.getTime()) : new Date(value);
   return Number.isFinite(date.getTime()) ? date : null;
 }
 
@@ -59,9 +57,7 @@ export function detectStalledOnboardingDrafts(
     const updatedAt = validDate(draft.updatedAt);
     if (!updatedAt || updatedAt.getTime() >= nowMs) return [];
 
-    const hoursStalled = Math.floor(
-      (nowMs - updatedAt.getTime()) / HOUR_MS,
-    );
+    const hoursStalled = Math.floor((nowMs - updatedAt.getTime()) / HOUR_MS);
     if (hoursStalled < thresholdHours) return [];
 
     const occurredAt = updatedAt.toISOString();
