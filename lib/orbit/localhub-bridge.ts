@@ -23,8 +23,8 @@ export type LocalHubOrbitEvent = Readonly<{
   schemaVersion: "1.0.0";
 }>;
 
-export interface OrbitEventSink {
-  ingest(event: LocalHubOrbitEvent): unknown | Promise<unknown>;
+export interface OrbitEventSink<TEvent = LocalHubOrbitEvent> {
+  ingest(event: TEvent): unknown | Promise<unknown>;
 }
 
 export type MerchantOnboardingStalledInput = {
