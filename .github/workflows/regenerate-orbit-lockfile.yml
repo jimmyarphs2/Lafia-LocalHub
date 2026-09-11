@@ -1,0 +1,53 @@
+name: Regenerate ORBIT package lockfile
+
+on:
+  push:
+    branches:
+      - codex/localhub-orbit-package-consumer
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+
+      - name: Remove stale placeholder entry
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = "package-lock.json";
+          const lock = JSON.parse(fs.readFileSync(path, "utf8"));
+          delete lock.packages["node_modules/@jimmyarphs2/orbit-os-core"];
+          fs.writeFileSync(path, JSON.stringify(lock, null, 2) + "\n");
+          NODE
+
+      - name: Regenerate lockfile with GitHub Packages access
+        run: npm install --package-lock-only --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit lockfile and remove helper workflow
+        run: |
+          git add package-lock.json
+          git rm .github/workflows/regenerate-orbit-lockfile.yml
+          if git diff --cached --quiet; then
+            echo "No lockfile changes were generated."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: regenerate ORBIT package lockfile"
+          git push
