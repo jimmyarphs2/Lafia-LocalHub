@@ -92,7 +92,8 @@ function eventTime(value: unknown): string {
     31,
   ];
 
-  if (month < 1 || month > 12 || day < 1 || day > daysInMonth[month - 1]) {
+  const maxDay = daysInMonth[month - 1] ?? 0;
+  if (month < 1 || month > 12 || day < 1 || day > maxDay) {
     throw new TypeError("occurredAt must be a valid ISO timestamp");
   }
 
