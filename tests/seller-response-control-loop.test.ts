@@ -9,6 +9,7 @@ import {
   SELLER_RESPONDED_EVENT,
   SHOPKEEPER_COMMUNICATION_AGENT,
   SimulatorOrbitEventSink,
+  SellerResponseCaseStateError,
   createSellerResponseControlLoop,
   type SellerResponseEvent,
   type SellerResponseEventSink,
@@ -149,6 +150,107 @@ describe("LocalHub Seller Response Control Loop v1", () => {
     });
     expect(loop.getAuditEvidence(requestInput.caseId)).toHaveLength(1);
     expect(loop.getCase(requestInput.caseId)?.status).toBe("awaiting_seller");
+  });
+
+  it("reserves a terminal response after uncertain admission and reconciles an exact retry", async () => {
+    const admitted = new Map<string, SellerResponseEvent>();
+    let throwAfterResponseCommit = true;
+    const sink: SellerResponseEventSink = {
+      idempotency: "required",
+      ingest(event) {
+        const existing = admitted.get(event.idempotencyKey);
+        if (existing) return { accepted: true, replayed: true };
+        admitted.set(event.idempotencyKey, event);
+        if (event.type === SELLER_RESPONDED_EVENT && throwAfterResponseCommit) {
+          throwAfterResponseCommit = false;
+          throw new Error("simulated uncertain terminal sink result");
+        }
+        return { accepted: true, replayed: false };
+      },
+    };
+    const loop = createSellerResponseControlLoop({ sink });
+    await loop.requestSellerResponse(requestInput);
+
+    const responseInput = {
+      caseId: requestInput.caseId,
+      response: "accepted" as const,
+      idempotencyKey: "response-uncertain-order-123-v1",
+      respondedAt: "2026-09-11T08:12:00Z",
+    };
+    await expect(loop.recordSellerResponse(responseInput)).rejects.toThrow(
+      /uncertain terminal sink result/i,
+    );
+
+    await expect(
+      loop.processSellerResponseTimeout({
+        caseId: requestInput.caseId,
+        idempotencyKey: "timeout-after-uncertain-response-v1",
+        observedAt: "2026-09-11T08:31:00Z",
+      }),
+    ).rejects.toBeInstanceOf(SellerResponseCaseStateError);
+    expect(loop.getSimulatorMetrics().fallbackWorkCount).toBe(0);
+
+    await expect(
+      loop.recordSellerResponse(responseInput),
+    ).resolves.toMatchObject({
+      outcome: "seller_responded",
+      replayed: false,
+    });
+    expect(admitted).toHaveLength(2);
+    expect(loop.getCase(requestInput.caseId)?.status).toBe("seller_responded");
+  });
+
+  it("keeps a pending idempotency key bound while terminal admission is uncertain", async () => {
+    const secondRequest = {
+      ...requestInput,
+      caseId: "lh-case-order-456",
+      orderId: "order-456",
+      sellerId: "seller-456",
+      idempotencyKey: "request-order-456-v1",
+    };
+    const admitted = new Map<string, SellerResponseEvent>();
+    let throwAfterResponseCommit = true;
+    const sink: SellerResponseEventSink = {
+      idempotency: "required",
+      ingest(event) {
+        const existing = admitted.get(event.idempotencyKey);
+        if (existing) return { accepted: true, replayed: true };
+        admitted.set(event.idempotencyKey, event);
+        if (event.type === SELLER_RESPONDED_EVENT && throwAfterResponseCommit) {
+          throwAfterResponseCommit = false;
+          throw new Error("simulated uncertain terminal sink result");
+        }
+        return { accepted: true, replayed: false };
+      },
+    };
+    const loop = createSellerResponseControlLoop({ sink });
+    await loop.requestSellerResponse(requestInput);
+    await loop.requestSellerResponse(secondRequest);
+
+    const sharedKey = "shared-pending-response-key";
+    await expect(
+      loop.recordSellerResponse({
+        caseId: requestInput.caseId,
+        response: "accepted",
+        idempotencyKey: sharedKey,
+        respondedAt: "2026-09-11T08:12:00Z",
+      }),
+    ).rejects.toThrow(/uncertain terminal sink result/i);
+
+    await expect(
+      loop.recordSellerResponse({
+        caseId: secondRequest.caseId,
+        response: "declined",
+        idempotencyKey: sharedKey,
+        respondedAt: "2026-09-11T08:13:00Z",
+      }),
+    ).rejects.toBeInstanceOf(IdempotencyConflictError);
+    expect(
+      [...admitted.values()].filter(
+        (event) => event.type === SELLER_RESPONDED_EVENT,
+      ),
+    ).toHaveLength(1);
+    expect(loop.getCase(secondRequest.caseId)?.status).toBe("awaiting_seller");
   });
 
   it("rejects reuse of an idempotency key for different work", async () => {

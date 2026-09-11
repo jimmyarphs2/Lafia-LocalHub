@@ -19,6 +19,9 @@ export type SellerResponseEventType =
   | typeof SELLER_RESPONDED_EVENT
   | typeof SELLER_REQUEST_MISSED_EVENT;
 
+type TerminalSellerResponseEventType =
+  typeof SELLER_RESPONDED_EVENT | typeof SELLER_REQUEST_MISSED_EVENT;
+
 export type SellerResponseEvent = Readonly<{
   companyId: typeof LOCALHUB_ORBIT_COMPANY_ID;
   type: SellerResponseEventType;
@@ -338,7 +341,15 @@ class SellerResponseControlLoop {
   readonly #audit = new Map<string, SellerResponseAuditEvidence[]>();
   readonly #commands = new Map<
     string,
-    { fingerprint: string; result: CommandResult }
+    { fingerprint: string; result: CommandResult | null }
+  >();
+  readonly #terminalReservations = new Map<
+    string,
+    {
+      eventType: TerminalSellerResponseEventType;
+      idempotencyKey: string;
+      fingerprint: string;
+    }
   >();
   readonly #commandLocks = new Map<string, Promise<void>>();
   readonly #caseLocks = new Map<string, Promise<void>>();
@@ -384,6 +395,7 @@ class SellerResponseControlLoop {
             "The seller response case already exists",
           );
         }
+        this.#bindPending(normalized.idempotencyKey, fingerprint);
 
         const receipt = await this.#provider.sendRequest({
           caseId: normalized.caseId,
@@ -464,7 +476,18 @@ class SellerResponseControlLoop {
         );
         if (replay) return replay;
         const current = this.#requiredCase(normalized.caseId);
-        if (current.status !== "awaiting_seller") {
+        const reservation = this.#terminalReservations.get(normalized.caseId);
+        if (reservation) {
+          if (
+            reservation.eventType !== SELLER_RESPONDED_EVENT ||
+            reservation.idempotencyKey !== normalized.idempotencyKey ||
+            reservation.fingerprint !== fingerprint
+          ) {
+            throw new SellerResponseCaseStateError(
+              "A terminal seller response transition is already reserved",
+            );
+          }
+        } else if (current.status !== "awaiting_seller") {
           throw new SellerResponseCaseStateError(
             "The seller response case is already resolved",
           );
@@ -477,6 +500,12 @@ class SellerResponseControlLoop {
             "The seller response is outside the active response window",
           );
         }
+        this.#bindPending(normalized.idempotencyKey, fingerprint);
+        this.#reserveTerminal(normalized.caseId, {
+          eventType: SELLER_RESPONDED_EVENT,
+          idempotencyKey: normalized.idempotencyKey,
+          fingerprint,
+        });
 
         const event = immutableEvent({
           type: SELLER_RESPONDED_EVENT,
@@ -493,6 +522,7 @@ class SellerResponseControlLoop {
         current.status = "seller_responded";
         current.response = normalized.response;
         current.respondedAt = normalized.respondedAt;
+        this.#terminalReservations.delete(normalized.caseId);
         this.#appendAudit(event, {
           provider: "simulator",
           response: normalized.response,
@@ -530,7 +560,18 @@ class SellerResponseControlLoop {
         );
         if (replay) return replay;
         const current = this.#requiredCase(normalized.caseId);
-        if (current.status !== "awaiting_seller") {
+        const reservation = this.#terminalReservations.get(normalized.caseId);
+        if (reservation) {
+          if (
+            reservation.eventType !== SELLER_REQUEST_MISSED_EVENT ||
+            reservation.idempotencyKey !== normalized.idempotencyKey ||
+            reservation.fingerprint !== fingerprint
+          ) {
+            throw new SellerResponseCaseStateError(
+              "A terminal seller response transition is already reserved",
+            );
+          }
+        } else if (current.status !== "awaiting_seller") {
           const result = Object.freeze({
             caseId: current.caseId,
             outcome: "already_resolved" as const,
@@ -539,7 +580,7 @@ class SellerResponseControlLoop {
           this.#remember(normalized.idempotencyKey, fingerprint, result);
           return result;
         }
-        if (normalized.observedAt < current.timeoutAt) {
+        if (!reservation && normalized.observedAt < current.timeoutAt) {
           const result = Object.freeze({
             caseId: current.caseId,
             outcome: "not_due" as const,
@@ -548,6 +589,13 @@ class SellerResponseControlLoop {
           this.#remember(normalized.idempotencyKey, fingerprint, result);
           return result;
         }
+
+        this.#bindPending(normalized.idempotencyKey, fingerprint);
+        this.#reserveTerminal(normalized.caseId, {
+          eventType: SELLER_REQUEST_MISSED_EVENT,
+          idempotencyKey: normalized.idempotencyKey,
+          fingerprint,
+        });
 
         const receipt = await this.#provider.queueManualFallback({
           caseId: current.caseId,
@@ -571,6 +619,7 @@ class SellerResponseControlLoop {
         current.status = "fallback_queued";
         current.fallback = receipt.fallback;
         current.fallbackReference = receipt.fallbackReference;
+        this.#terminalReservations.delete(normalized.caseId);
         this.#appendAudit(event, {
           provider: receipt.provider,
           fallback: receipt.fallback,
@@ -636,7 +685,42 @@ class SellerResponseControlLoop {
     if (!existing) return null;
     if (existing.fingerprint !== fingerprint)
       throw new IdempotencyConflictError();
+    if (!existing.result) return null;
     return replayResult(existing.result as T);
+  }
+
+  #bindPending(idempotencyKey: string, fingerprint: string): void {
+    const existing = this.#commands.get(idempotencyKey);
+    if (existing) {
+      if (existing.fingerprint !== fingerprint)
+        throw new IdempotencyConflictError();
+      return;
+    }
+    this.#commands.set(idempotencyKey, { fingerprint, result: null });
+  }
+
+  #reserveTerminal(
+    caseIdentifier: string,
+    reservation: {
+      eventType: TerminalSellerResponseEventType;
+      idempotencyKey: string;
+      fingerprint: string;
+    },
+  ): void {
+    const existing = this.#terminalReservations.get(caseIdentifier);
+    if (existing) {
+      if (
+        existing.eventType !== reservation.eventType ||
+        existing.idempotencyKey !== reservation.idempotencyKey ||
+        existing.fingerprint !== reservation.fingerprint
+      ) {
+        throw new SellerResponseCaseStateError(
+          "A terminal seller response transition is already reserved",
+        );
+      }
+      return;
+    }
+    this.#terminalReservations.set(caseIdentifier, reservation);
   }
 
   #remember(
