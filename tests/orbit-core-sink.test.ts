@@ -17,11 +17,11 @@ describe("LocalHub ORBIT core sink", () => {
       occurredAt: "2026-09-10T12:00:00Z",
     };
 
-    const first = await bridge.emitMerchantOnboardingStalled(input) as {
+    const first = (await bridge.emitMerchantOnboardingStalled(input)) as {
       duplicate: boolean;
       event: { id: string };
     };
-    const duplicate = await bridge.emitMerchantOnboardingStalled(input) as {
+    const duplicate = (await bridge.emitMerchantOnboardingStalled(input)) as {
       duplicate: boolean;
       event: { id: string };
     };
