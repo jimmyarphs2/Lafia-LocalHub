@@ -5,7 +5,6 @@ import {
   InMemoryStore,
   MemoryKernel,
   MutationGuard,
-  OrbitError,
   OrbitRuntime,
   sha256,
 } from "@jimmyarphs2/orbit-os-core";
@@ -63,6 +62,19 @@ type StoredExecution = {
   duplicate: boolean;
   result: Record<string, unknown>;
 };
+
+type LocalHubError = Error & {
+  code: string;
+  details: Record<string, unknown>;
+};
+
+function localHubError(code: string, message: string): LocalHubError {
+  const error = new Error(message) as LocalHubError;
+  error.name = "OrbitError";
+  error.code = code;
+  error.details = {};
+  return error;
+}
 
 type AuditEntry = {
   companyId: string;
@@ -158,7 +170,7 @@ function resultOf(value: Record<string, unknown>): GovernedWorkflowResult {
 function eventFromStore(store: GovernedStore, eventId: string): StoredEvent {
   const event = store.events.get(eventId);
   if (!event) {
-    throw new OrbitError("LOCALHUB_EVENT_NOT_FOUND", "The LocalHub event was not found.");
+    throw localHubError("LOCALHUB_EVENT_NOT_FOUND", "The LocalHub event was not found.");
   }
   return event;
 }
@@ -171,7 +183,7 @@ function decisionForEvent(
     (candidate) => candidate.eventId === eventId,
   );
   if (!decision) {
-    throw new OrbitError(
+    throw localHubError(
       "LOCALHUB_DECISION_NOT_FOUND",
       "No ORBIT decision is recorded for the LocalHub event.",
     );
@@ -184,7 +196,7 @@ function runForEvent(store: GovernedStore, eventId: string): StoredRun {
     (candidate) => candidate.eventId === eventId,
   );
   if (!run) {
-    throw new OrbitError(
+    throw localHubError(
       "LOCALHUB_RUN_NOT_FOUND",
       "No ORBIT runtime run is recorded for the LocalHub event.",
     );
@@ -285,13 +297,13 @@ export function createLocalHubGovernedRuntime() {
             "localhub.onboarding": "1.0.0",
           },
           authorize: async () => {
-            throw new OrbitError(
+            throw localHubError(
               "LOCALHUB_AUTONOMOUS_ACTION_DISABLED",
               "LocalHub customer actions require explicit founder approval.",
             );
           },
           execute: async () => {
-            throw new OrbitError(
+            throw localHubError(
               "LOCALHUB_AUTONOMOUS_ACTION_DISABLED",
               "Outbound LocalHub actions are disabled in this pilot.",
             );
@@ -334,7 +346,7 @@ export function createLocalHubGovernedRuntime() {
       }
 
       if (run.status !== "waiting_approval") {
-        throw new OrbitError(
+        throw localHubError(
           "LOCALHUB_APPROVAL_NOT_PENDING",
           "This LocalHub workflow is not waiting for founder approval.",
         );
@@ -344,7 +356,7 @@ export function createLocalHubGovernedRuntime() {
         !decision.action ||
         decision.action.type !== FOLLOWUP_DRAFT_ACTION
       ) {
-        throw new OrbitError(
+        throw localHubError(
           "LOCALHUB_ACTION_NOT_APPROVABLE",
           "Only the governed follow-up draft action can be approved.",
         );
