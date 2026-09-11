@@ -15,6 +15,12 @@ Specialist boundaries are:
 
 These are target interfaces, not evidence that all agents or tools are implemented.
 
+The simulator-only Seller Response Control Loop v1 is the first bounded
+coordination implementation across three of these interfaces. ATLAS is the only
+orchestrator; ORDERGUARD owns the case state; SHOPKEEPER owns the simulated
+seller request and manual-review fallback. The loop emits immutable evidence but
+does not enable `contact_vendor` or any other external tool.
+
 ## Controlled gateway
 
 Planned tools include `get_platform_summary`, `get_revenue_report`, `get_order`, `get_order_issues`, `get_vendor`, `get_vendor_status`, `get_demand_gaps`, `get_search_trends`, `get_unmet_demand`, `create_referral_mission`, `contact_customer`, `contact_vendor`, `generate_campaign`, `publish_campaign`, `get_campaign_performance`, `recommend_growth_actions`, `get_system_health`, and `get_incidents`.
