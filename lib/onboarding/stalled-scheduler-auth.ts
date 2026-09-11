@@ -3,14 +3,14 @@ import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 
 const MIN_SCHEDULER_SECRET_LENGTH = 32;
-const BEARER_TOKEN = /^Bearer ([^\\s]+)$/;
+const BEARER_TOKEN = /^Bearer ([^\s]+)$/;
 
 export function getConfiguredStalledSchedulerSecret(): string | null {
   const secret = process.env.ONBOARDING_STALLED_CRON_SECRET;
   if (
     !secret ||
     secret.length < MIN_SCHEDULER_SECRET_LENGTH ||
-    /\\s/.test(secret) ||
+    /\s/.test(secret) ||
     secret.trim() !== secret
   ) {
     return null;
