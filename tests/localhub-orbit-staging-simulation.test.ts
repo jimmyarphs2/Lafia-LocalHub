@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  detectStalledOnboardingDrafts,
-} from "@/lib/onboarding/stalled-detector";
+import { detectStalledOnboardingDrafts } from "@/lib/onboarding/stalled-detector";
 import { emptyOnboardingDraft } from "@/lib/onboarding/schema";
 import { processStalledOnboardingDrafts } from "@/lib/orbit/localhub-stalled-workflow";
 import { createLocalHubGovernedRuntime } from "@/lib/orbit/localhub-governed-runtime";
@@ -12,7 +10,8 @@ const now = new Date("2026-09-11T12:00:00.000Z");
 function draft(
   overrides: Partial<{
     businessId: string;
-    step: "business" | "category" | "profile" | "location" | "review" | "complete";
+    step:
+      "business" | "category" | "profile" | "location" | "review" | "complete";
     updatedAt: string;
     email: string;
   }> = {},
@@ -64,9 +63,9 @@ describe("LocalHub stalled onboarding detector", () => {
       sourceEventId:
         "onboarding-stalled:11111111-1111-4111-8111-111111111111:2026-09-10T10:00:00.000Z",
     });
-    expect(
-      detectStalledOnboardingDrafts([draft()], { now }),
-    ).toEqual(candidates);
+    expect(detectStalledOnboardingDrafts([draft()], { now })).toEqual(
+      candidates,
+    );
   });
 
   it("runs the detected candidate through the staging-safe governed runtime", async () => {
