@@ -7,6 +7,8 @@ const MAX_SOURCE_EVENT_ID_LENGTH = 160;
 const MAX_RECIPIENT_LENGTH = 320;
 const MAX_NEXT_STEP_LENGTH = 240;
 const MAX_STALLED_HOURS = 8760;
+const ISO_TIMESTAMP_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-](?:0\d|1\d|2[0-3]):[0-5]\d)$/u;
 
 export type LocalHubOrbitEvent = Readonly<{
   companyId: typeof LOCALHUB_ORBIT_COMPANY_ID;
@@ -67,6 +69,33 @@ function optionalRecipient(value: unknown): string | null {
 function eventTime(value: unknown): string {
   if (value === undefined) return new Date().toISOString();
   const text = requiredText(value, "occurredAt", 64);
+  const match = ISO_TIMESTAMP_PATTERN.exec(text);
+  if (!match) {
+    throw new TypeError("occurredAt must be a valid ISO timestamp");
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const daysInMonth = [
+    31,
+    year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ];
+
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth[month - 1]) {
+    throw new TypeError("occurredAt must be a valid ISO timestamp");
+  }
+
   const parsed = new Date(text);
   if (Number.isNaN(parsed.getTime())) {
     throw new TypeError("occurredAt must be a valid ISO timestamp");

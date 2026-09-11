@@ -1,5 +1,10 @@
 .route {
   min-height: 100vh;
+  --ink: #08142e;
+  --muted: #536079;
+  --line: #dfe5f0;
+  --blue: #2350f4;
+  color: var(--ink);
   background:
     radial-gradient(
       circle at 8% 2%,
