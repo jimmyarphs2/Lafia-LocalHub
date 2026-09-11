@@ -36,6 +36,6 @@ describe("LocalHub ORBIT core sink", () => {
         idempotencyKey: "onboarding-123",
       },
     });
-    expect(sink.store.events).toHaveLength(1);
+    expect(sink.store.events.size).toBe(1);
   });
 });
