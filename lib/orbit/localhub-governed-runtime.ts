@@ -1,3 +1,4 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 import {
   AgentRunRegistry,
   DecisionEngine,
@@ -170,7 +171,10 @@ function resultOf(value: Record<string, unknown>): GovernedWorkflowResult {
 function eventFromStore(store: GovernedStore, eventId: string): StoredEvent {
   const event = store.events.get(eventId);
   if (!event) {
-    throw localHubError("LOCALHUB_EVENT_NOT_FOUND", "The LocalHub event was not found.");
+    throw localHubError(
+      "LOCALHUB_EVENT_NOT_FOUND",
+      "The LocalHub event was not found.",
+    );
   }
   return event;
 }
