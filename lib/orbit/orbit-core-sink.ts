@@ -1,7 +1,4 @@
-import {
-  EventEngine,
-  InMemoryStore,
-} from "@jimmyarphs2/orbit-os-core";
+import { EventEngine, InMemoryStore } from "@jimmyarphs2/orbit-os-core";
 import type {
   EventEngine as EventEngineType,
   InMemoryStore as InMemoryStoreType,
