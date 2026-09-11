@@ -4,6 +4,8 @@
   --muted: #536079;
   --line: #dfe5f0;
   --blue: #2350f4;
+  --surface-raised: #ffffff;
+  --surface-soft: #eef3ff;
   color: var(--ink);
   background:
     radial-gradient(
