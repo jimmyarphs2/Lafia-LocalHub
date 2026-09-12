@@ -31,4 +31,40 @@ describe("application URL configuration", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://localhub.example");
     expect(getAppOrigin()).toBe("https://localhub.example");
   });
+
+  it("keeps Preview redirects on the validated Vercel branch origin", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://localhub.com.ng");
+    vi.stubEnv(
+      "VERCEL_BRANCH_URL",
+      "localhub-git-codex-localhub-ui-foundation.vercel.app",
+    );
+
+    expect(getAppOrigin()).toBe(
+      "https://localhub-git-codex-localhub-ui-foundation.vercel.app",
+    );
+  });
+
+  it("never trusts a non-Vercel Preview redirect origin", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("VERCEL_BRANCH_URL", "attacker.example");
+    vi.stubEnv("VERCEL_URL", "localhub.vercel.app/path");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://localhub.com.ng");
+
+    expect(getAppOrigin()).toBe("https://localhub.com.ng");
+  });
+
+  it("preserves the configured Production redirect origin", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv(
+      "VERCEL_BRANCH_URL",
+      "localhub-git-codex-localhub-ui-foundation.vercel.app",
+    );
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://localhub.com.ng");
+
+    expect(getAppOrigin()).toBe("https://localhub.com.ng");
+  });
 });
