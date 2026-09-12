@@ -153,10 +153,7 @@ export default async function AuthPage({
               <Link className={styles.guestButton} href={browsePath}>
                 <Search aria-hidden="true" size={19} /> Explore Lafia as guest
               </Link>
-              <Link
-                className={styles.businessLink}
-                href="/vendor/onboarding"
-              >
+              <Link className={styles.businessLink} href="/vendor/onboarding">
                 <span className={styles.businessIcon} aria-hidden="true">
                   <Building2 size={20} />
                 </span>

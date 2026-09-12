@@ -83,6 +83,6 @@ describe("session-aware auth page", () => {
     );
 
     expect(html).toContain('href="/vendor/onboarding"');
-    expect(html).not.toContain('/lafia/vendor/onboarding');
+    expect(html).not.toContain("/lafia/vendor/onboarding");
   });
 });
