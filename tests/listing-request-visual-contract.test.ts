@@ -20,8 +20,11 @@ describe("listing request visual contract", () => {
   });
 
   it("keeps the profile truthful and the guest quote path explicit", () => {
+    const page = read("app/[market]/listings/[listing]/page.tsx");
     const profile = read("components/listing-profile-experience.tsx");
 
+    expect(page).toContain('export const dynamic = "force-dynamic"');
+    expect(page).not.toContain('export const dynamic = "force-static"');
     expect(profile).toContain("Fictional LocalHub demo");
     expect(profile).toContain("Published directory listing");
     expect(profile).toContain("Requests unavailable in demo");

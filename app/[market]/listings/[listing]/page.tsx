@@ -10,6 +10,10 @@ import { getCatalogForMarket } from "@/lib/catalog/source";
 import { serializeJsonLd } from "@/lib/catalog/structured-data";
 import { getPublicUrl, isDemoMode } from "@/lib/market/public-url";
 
+// The shared market shell reads cookie-scoped identity. Listing profiles must
+// therefore render per request even when demo slugs are known at build time.
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return isDemoMode() ? listings.map(({ slug: listing }) => ({ listing })) : [];
 }
