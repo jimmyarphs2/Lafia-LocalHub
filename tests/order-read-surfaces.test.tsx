@@ -180,7 +180,7 @@ describe("order history route boundaries", () => {
     expect(mobileNav).not.toContain("AccountIntentButton");
     expect(mobileNav).toContain("/activity");
     expect(mobileNav).toContain("<span>Activity</span>");
-    expect(mobileNav).toContain('identity ? "Account" : "Sign in"');
+    expect(mobileNav).toContain('identity ? "Profile" : "Sign in"');
     expect(mobileNav).toContain("/account");
   });
 });

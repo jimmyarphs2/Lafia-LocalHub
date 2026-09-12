@@ -108,7 +108,7 @@ function MobileCustomerNav({
         }
       >
         <UserRound aria-hidden="true" size={20} />
-        <span>{identity ? "Account" : "Sign in"}</span>
+        <span>{identity ? "Profile" : "Sign in"}</span>
       </Link>
     </nav>
   );

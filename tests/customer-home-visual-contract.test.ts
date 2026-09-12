@@ -7,11 +7,11 @@ const read = (path: string) =>
   readFileSync(resolve(process.cwd(), path), "utf8");
 
 describe("customer home visual trust boundary", () => {
-  it("renders the synthetic market hero only for the explicit demo catalog", () => {
+  it("renders the local market hero as application artwork", () => {
     const page = read("app/[market]/page.tsx");
 
-    expect(page).toMatch(
-      /demoMode\s*\?\s*\(\s*<div aria-hidden="true" className="home-hero-image" \/>/,
+    expect(page).toContain(
+      '<div aria-hidden="true" className="home-hero-image" />',
     );
   });
 

@@ -72,6 +72,17 @@ describe("session-aware auth page", () => {
     expect(html).toContain('action="/auth/logout"');
     expect(html).not.toContain("Continue with Google");
     expect(html).not.toContain("Email me a sign-in link");
+    expect(html).not.toContain("Continue with Facebook");
     expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+
+  it("points business setup to the canonical vendor route", async () => {
+    mocks.getCurrentIdentity.mockResolvedValue(null);
+    const html = renderToStaticMarkup(
+      await AuthPage({ searchParams: Promise.resolve({}) }),
+    );
+
+    expect(html).toContain('href="/vendor/onboarding"');
+    expect(html).not.toContain('/lafia/vendor/onboarding');
   });
 });

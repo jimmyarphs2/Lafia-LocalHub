@@ -21,7 +21,7 @@ import { getServerAdminSupabaseClient } from "@/lib/supabase/admin";
 const MAX_PROVIDER_AUTH_FORM_BYTES = 4 * 1024;
 
 const providerSchema = z.object({
-  provider: z.enum(["google", "facebook"]),
+  provider: z.literal("google"),
   next: z.string().max(2048).optional(),
 });
 

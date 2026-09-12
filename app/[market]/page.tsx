@@ -41,18 +41,13 @@ export default async function MarketHome({ params }: PageProps<"/[market]">) {
   return (
     <div className="localhub-home">
       <section className="hero localhub-home-hero">
-        {demoMode ? (
-          <div aria-hidden="true" className="home-hero-image" />
-        ) : null}
+        <div aria-hidden="true" className="home-hero-image" />
         <div className="container hero-content">
           <p className="home-location-pill">Local discovery · {marketName}</p>
           <h1>Your city, one request away.</h1>
           <p className="lede">
-            Find products, services, and local businesses—or simply describe
-            what you need. Browse{" "}
-            {demoMode
-              ? "fictional directory examples made for testing."
-              : "published options around you."}
+            Search products, services, and local businesses—or simply describe
+            what you need nearby.
           </p>
           <SearchForm market={market} />
           <nav className="query-examples" aria-label="Quick searches">

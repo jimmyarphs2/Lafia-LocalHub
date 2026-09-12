@@ -124,11 +124,11 @@ html[data-theme="light"] .notice strong {
   color: var(--ink);
 }
 .localhub-home-hero {
-  min-height: 610px;
+  min-height: 560px;
   display: grid;
   align-items: center;
   isolation: isolate;
-  padding: 86px 0 68px;
+  padding: 76px 0 58px;
   color: #ffffff;
   text-align: left;
   background: #06152f;
@@ -167,10 +167,10 @@ html[data-theme="light"] .notice strong {
   margin: 0 auto;
 }
 .localhub-home-hero h1 {
-  max-width: 720px;
-  margin-bottom: 18px;
-  font-size: clamp(3.25rem, 7vw, 6.25rem);
-  letter-spacing: -0.065em;
+  max-width: 650px;
+  margin-bottom: 16px;
+  font-size: clamp(3rem, 5.6vw, 4.8rem);
+  letter-spacing: -0.058em;
   text-wrap: balance;
 }
 .localhub-home-hero .lede {
@@ -225,6 +225,33 @@ html[data-theme="light"] .notice strong {
 .home-categories,
 .home-listings {
   position: relative;
+}
+.localhub-home {
+  color: #071a38;
+  background: #fffdf8;
+}
+.localhub-home .home-categories {
+  color: #071a38;
+  background: #fffdf8;
+}
+.localhub-home .section-alt {
+  color: #071a38;
+  background: #f5f2e9;
+  border-color: #dce3ee;
+}
+.localhub-home .section-heading p,
+.localhub-home .listing-kind,
+.localhub-home .listing-meta {
+  color: #5b687d;
+}
+.localhub-home .category-tile,
+.localhub-home .listing-card {
+  color: #071a38;
+  border-color: #dce3ee;
+  background: #ffffff;
+}
+.localhub-home .category-tile svg {
+  background: #eef3ff;
 }
 .home-categories .eyebrow,
 .home-listings .eyebrow {
@@ -393,9 +420,9 @@ html[data-theme="light"] .notice strong {
     line-height: 1.35;
   }
   .localhub-home-hero {
-    min-height: 590px;
+    min-height: 520px;
     align-items: end;
-    padding: 74px 0 46px;
+    padding: 68px 0 38px;
   }
   .localhub-home-hero::before {
     background:
@@ -415,14 +442,14 @@ html[data-theme="light"] .notice strong {
     margin-inline: auto;
   }
   .localhub-home-hero h1 {
-    max-width: 360px;
+    max-width: 340px;
     margin-bottom: 14px;
-    font-size: clamp(2.85rem, 14vw, 4.1rem);
-    line-height: 0.98;
+    font-size: clamp(2.35rem, 11.5vw, 3.35rem);
+    line-height: 1;
   }
   .localhub-home-hero .lede {
     margin-bottom: 22px;
-    font-size: 0.94rem;
+    font-size: 0.9rem;
   }
   .home-location-pill {
     margin-bottom: 13px;
@@ -485,7 +512,7 @@ html[data-theme="light"] .notice strong {
     display: none;
   }
   .home-listings .listing-card {
-    flex: 0 0 min(78vw, 300px);
+    flex: 0 0 min(76vw, 290px);
     display: block;
     scroll-snap-align: start;
   }
@@ -500,6 +527,18 @@ html[data-theme="light"] .notice strong {
   }
   .site-footer {
     padding-bottom: 28px;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1024px) {
+  .localhub-home-hero {
+    min-height: 540px;
+  }
+  .localhub-home-hero .hero-content {
+    width: min(100% - 64px, 900px);
+  }
+  .home-categories .category-grid {
+    grid-template-columns: repeat(5, minmax(108px, 1fr));
   }
 }
 

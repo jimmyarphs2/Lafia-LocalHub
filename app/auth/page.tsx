@@ -1,8 +1,9 @@
 import {
   ArrowLeft,
   ArrowRight,
-  CircleUserRound,
-  Mail,
+  Building2,
+  MapPin,
+  Search,
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
@@ -11,7 +12,6 @@ import { redirect } from "next/navigation";
 
 import { BrandMark } from "@/components/brand-mark";
 import { getCurrentIdentity } from "@/lib/auth/identity";
-import { safeAuthNotice } from "@/lib/auth/notices";
 import {
   AUTH_RETURN_COOKIE,
   parseAuthReturnCookie,
@@ -32,7 +32,6 @@ export default async function AuthPage({
   searchParams: Promise<{
     next?: string;
     error?: string;
-    notice?: string;
     resume?: string;
     intent?: string;
   }>;
@@ -45,7 +44,6 @@ export default async function AuthPage({
   );
   const next = explicitNext || cookieNext || "/";
   const error = safeAuthError(params.error ?? null);
-  const notice = safeAuthNotice(params.notice);
   const configured = Boolean(getPublicSupabaseConfig());
   const serverConfigured = isAuthRuntimeReady();
   const authAvailable =
@@ -58,145 +56,135 @@ export default async function AuthPage({
   const identity = await getCurrentIdentity();
   if (identity && !resumeIntent) redirect(next);
   const continuesOrder = isListingOrderConfirmationPath(next);
-  const formDescription = authAvailable
-    ? "We will send a sign-in link to this email address."
-    : "Sign-in is not configured in this environment. You can still continue browsing LocalHub.";
+  const browsePath = "/lafia";
 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
         <BrandMark />
-        <Link className={styles.backLink} href={next}>
+        <Link className={styles.backLink} href={browsePath}>
           <ArrowLeft aria-hidden="true" size={17} /> Back to browse
         </Link>
       </header>
-      <section aria-labelledby="auth-title" className={styles.card}>
-        <div className={styles.icon} aria-hidden="true">
-          <ShieldCheck size={28} />
-        </div>
-        <h1 id="auth-title">
-          {identity && resumeIntent
-            ? "Resume your saved work"
-            : "Sign in to continue"}
-        </h1>
-        <p className={styles.intro}>
-          {continuesDemand
-            ? "You will return to review a category gap. Nothing has been recorded yet."
-            : continuesOrder
-              ? "Your saved LocalHub order will be waiting after you sign in."
-              : resumeIntent
-                ? "Your saved LocalHub request will be waiting after you sign in."
-                : "Sign in once to keep your LocalHub account, activity, orders, and requests connected."}
-        </p>
-        {resumeIntent ? (
-          <div className={styles.notice} role="status">
-            <strong>
-              Resume your saved {continuesOrder ? "order" : "request"}.
-            </strong>
-            <span>We need one more secure confirmation before continuing.</span>
-            <form action="/auth/resume" method="post">
-              <input name="intent" type="hidden" value={resumeIntent} />
-              <input name="next" type="hidden" value={next} />
-              <button disabled={!authAvailable} type="submit">
-                Resume {continuesOrder ? "order" : "request"}
-              </button>
-            </form>
-          </div>
-        ) : null}
-        {!identity || !resumeIntent ? (
-          <>
-            {!authAvailable ? (
-              <div className={styles.notice} role="status">
-                <strong>Sign-in is unavailable in this environment.</strong>
-                <span>
-                  Provider setup is still pending. Browsing remains available
-                  without an account.
-                </span>
-              </div>
-            ) : null}
-            {authAvailable && error ? (
-              <div className={styles.error} role="alert">
-                <strong>We could not complete sign-in.</strong>
-                <span>
-                  Please check the details and choose a sign-in method again.
-                </span>
-              </div>
-            ) : null}
-            {authAvailable && notice === "check_email" ? (
-              <div className={styles.success} role="status">
-                <strong>Check your email for a sign-in link.</strong>
-                <span>
-                  If email sign-in is available for that address, a secure link
-                  will arrive shortly. You can safely close this page.
-                </span>
-              </div>
-            ) : null}
-            <form action="/auth/email" className={styles.form} method="post">
-              <input name="next" type="hidden" value={next} />
-              <label htmlFor="email">Email address</label>
-              <input
-                aria-describedby="email-help"
-                autoComplete="email"
-                disabled={!authAvailable}
-                id="email"
-                name="email"
-                placeholder="you@example.com"
-                required
-                type="email"
-              />
-              <p className={styles.help} id="email-help">
-                {formDescription}
-              </p>
-              <button disabled={!authAvailable} type="submit">
-                <Mail aria-hidden="true" size={18} /> Email me a sign-in link
-                <ArrowRight aria-hidden="true" size={17} />
-              </button>
-            </form>
-            <div className={styles.divider} aria-hidden="true">
-              <span /> <p>or continue with</p> <span />
-            </div>
-            <form
-              action="/auth/provider"
-              className={styles.providers}
-              method="post"
-            >
-              <input name="next" type="hidden" value={next} />
-              <button
-                disabled={!authAvailable}
-                name="provider"
-                type="submit"
-                value="google"
-              >
-                <CircleUserRound aria-hidden="true" size={20} /> Continue with
-                Google
-              </button>
-              <button
-                disabled={!authAvailable}
-                name="provider"
-                type="submit"
-                value="facebook"
-              >
-                <CircleUserRound aria-hidden="true" size={20} /> Continue with
-                Facebook
-              </button>
-            </form>
-            <p className={styles.continueNote}>
-              <Link href={next}>Continue browsing without an account</Link>
+      <div className={styles.shell}>
+        <section className={styles.story} aria-label="Discover LocalHub">
+          <div className={styles.storyShade} />
+          <div className={styles.storyContent}>
+            <span className={styles.location}>
+              <MapPin aria-hidden="true" size={16} /> Lafia, Nasarawa State
+            </span>
+            <h2>Everything local, one request away.</h2>
+            <p>
+              Find businesses, products, and services across Lafia—then save,
+              request, or claim what belongs to you.
             </p>
-          </>
-        ) : (
-          <div className={styles.notice} role="status">
-            <strong>
-              You are already signed in as {identity.displayName}.
-            </strong>
-            <span>Resume the saved action above or return to browsing.</span>
-            <form action="/auth/logout" method="post">
-              <input name="next" type="hidden" value="/" />
-              <button type="submit">Sign out instead</button>
-            </form>
           </div>
-        )}
-      </section>
+        </section>
+        <section aria-labelledby="auth-title" className={styles.card}>
+          <div className={styles.icon} aria-hidden="true">
+            <ShieldCheck size={28} />
+          </div>
+          <p className={styles.eyebrow}>Secure LocalHub account</p>
+          <h1 id="auth-title">
+            {identity && resumeIntent
+              ? "Resume your saved work"
+              : "Sign in to continue"}
+          </h1>
+          <p className={styles.intro}>
+            {continuesDemand
+              ? "Sign in and return to review this category gap. Nothing has been recorded yet."
+              : continuesOrder
+                ? "Sign in with Google and your saved order will be waiting."
+                : resumeIntent
+                  ? "Sign in with Google and your saved request will be waiting."
+                  : "Use Google to keep your saved places, activity, requests, and business tools connected."}
+          </p>
+          {resumeIntent ? (
+            <div className={styles.notice} role="status">
+              <strong>
+                Resume your saved {continuesOrder ? "order" : "request"}.
+              </strong>
+              <span>One secure confirmation is needed before continuing.</span>
+              <form action="/auth/resume" method="post">
+                <input name="intent" type="hidden" value={resumeIntent} />
+                <input name="next" type="hidden" value={next} />
+                <button disabled={!authAvailable} type="submit">
+                  Resume {continuesOrder ? "order" : "request"}
+                </button>
+              </form>
+            </div>
+          ) : null}
+          {!identity || !resumeIntent ? (
+            <>
+              {!authAvailable ? (
+                <div className={styles.notice} role="status">
+                  <strong>Google sign-in setup is being completed.</strong>
+                  <span>
+                    You can explore every public listing while sign-in is
+                    unavailable in this preview.
+                  </span>
+                </div>
+              ) : null}
+              {authAvailable && error ? (
+                <div className={styles.error} role="alert">
+                  <strong>Google sign-in did not finish.</strong>
+                  <span>Please try again or continue browsing as a guest.</span>
+                </div>
+              ) : null}
+              <form
+                action="/auth/provider"
+                className={styles.providers}
+                method="post"
+              >
+                <input name="next" type="hidden" value={next} />
+                <button
+                  disabled={!authAvailable}
+                  name="provider"
+                  type="submit"
+                  value="google"
+                >
+                  Continue with Google
+                  <ArrowRight aria-hidden="true" size={18} />
+                </button>
+              </form>
+              <div className={styles.divider} aria-hidden="true">
+                <span /> <p>or</p> <span />
+              </div>
+              <Link className={styles.guestButton} href={browsePath}>
+                <Search aria-hidden="true" size={19} /> Explore Lafia as guest
+              </Link>
+              <Link
+                className={styles.businessLink}
+                href="/vendor/onboarding"
+              >
+                <span className={styles.businessIcon} aria-hidden="true">
+                  <Building2 size={20} />
+                </span>
+                <span>
+                  <strong>Run a local business?</strong>
+                  <small>List or claim your business</small>
+                </span>
+                <ArrowRight aria-hidden="true" size={18} />
+              </Link>
+              <p className={styles.trustNote}>
+                <ShieldCheck aria-hidden="true" size={16} /> Your public profile
+                is created only after you sign in.
+              </p>
+            </>
+          ) : (
+            <div className={styles.notice} role="status">
+              <strong>
+                You are already signed in as {identity.displayName}.
+              </strong>
+              <span>Resume the saved action above or return to browsing.</span>
+              <form action="/auth/logout" method="post">
+                <input name="next" type="hidden" value="/" />
+                <button type="submit">Sign out instead</button>
+              </form>
+            </div>
+          )}
+        </section>
+      </div>
     </main>
   );
 }
