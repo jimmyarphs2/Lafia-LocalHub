@@ -53,6 +53,26 @@ describe("catalog publication boundary", () => {
     }
   });
 
+  it("renders public detail pages per request without a privileged server client", () => {
+    for (const path of [
+      "app/[market]/listings/[listing]/page.tsx",
+      "app/[market]/vendors/[vendor]/page.tsx",
+    ]) {
+      const source = read(path);
+
+      expect(source).toContain('export const dynamic = "force-dynamic"');
+      expect(source).not.toMatch(
+        /SUPABASE_SERVICE_ROLE_KEY|supabase\/admin|getServerSupabaseClient/,
+      );
+    }
+
+    const publicCatalog = read("lib/catalog/public-catalog.ts");
+    expect(publicCatalog).toContain("getPublicSupabaseConfig");
+    expect(publicCatalog).not.toMatch(
+      /SUPABASE_SERVICE_ROLE_KEY|supabase\/admin|getServerSupabaseClient/,
+    );
+  });
+
   it("never publishes fictional demo records in the sitemap", () => {
     expect(read("app/sitemap.ts")).toContain(
       'catalog.source === "fictional-demo"',

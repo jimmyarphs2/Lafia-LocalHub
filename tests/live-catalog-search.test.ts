@@ -56,6 +56,37 @@ const liveListing = (overrides: Partial<Listing> = {}): Listing => ({
 });
 
 describe("live catalog search boundary", () => {
+  it("matches published cake text when optional capability metadata is absent", () => {
+    const cakeCategory: Category = {
+      ...liveCategory,
+      slug: "cakes-bakes",
+      name: "Cakes & Bakes — fictional QA",
+      aliases: ["cake", "cakes", "bakery"],
+    };
+    const cakeListing = liveListing({
+      category: cakeCategory.slug,
+      categoryId: cakeCategory.id,
+      title: "Made-to-order cakes — fictional QA",
+      description: "Fictional listing used only for pre-launch testing.",
+      capabilityTags: [],
+      routeKey: "lafia-bakes-qa~made-to-order-cakes",
+      slug: "made-to-order-cakes",
+      vendor: "lafia-bakes-qa",
+    });
+
+    const result = searchListings("birthday cake", "lafia", [cakeListing], {
+      categories: [cakeCategory],
+      locations: [],
+    });
+
+    expect(result.intent.capabilityTags).toEqual(
+      expect.arrayContaining(["birthday-cake", "cake"]),
+    );
+    expect(result.results.map(({ routeKey }) => routeKey)).toEqual([
+      "lafia-bakes-qa~made-to-order-cakes",
+    ]);
+  });
+
   it("uses supplied live category aliases instead of the static demo taxonomy", () => {
     const collidingCategory: Category = {
       ...liveCategory,

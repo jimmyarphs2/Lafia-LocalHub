@@ -35,6 +35,12 @@ describe("SearchResultsExperience", () => {
     expect(screen.getAllByText("Fictional demo")).toHaveLength(3);
     expect(container.querySelectorAll("img")).toHaveLength(3);
     expect(container.textContent).not.toMatch(/verified|reviews|open now/i);
+    expect(
+      screen.getByRole("link", { name: "Made-to-order birthday cakes" }),
+    ).toHaveAttribute(
+      "href",
+      `/lafia/listings/made-to-order-cakes?q=${encodeURIComponent(query)}`,
+    );
   });
 
   it("filters, resets, sorts, and toggles the area overview", () => {
