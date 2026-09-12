@@ -538,7 +538,13 @@ export function SearchResultsExperience({
               </h2>
               <p>Try a broader category or fewer details.</p>
               {demandPath ? (
-                <a href={demandPath}>Review category-gap record</a>
+                <a
+                  href={demandPath}
+                  referrerPolicy="no-referrer"
+                  rel="noreferrer"
+                >
+                  Review category-gap record
+                </a>
               ) : null}
             </div>
           )}
