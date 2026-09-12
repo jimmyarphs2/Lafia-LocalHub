@@ -78,17 +78,20 @@ export function DemoCommitmentNotice() {
 
 export function CommitmentLink({
   action,
+  label: labelOverride,
   market,
   listing,
   query,
 }: {
   action: "enquire" | "request-booking";
+  label?: string;
   market: string;
   listing: string;
   query?: string;
 }) {
   const label =
-    action === "request-booking" ? "Request a booking" : "Send an enquiry";
+    labelOverride ??
+    (action === "request-booking" ? "Request a booking" : "Send an enquiry");
   return (
     <form
       action={`/${market}/listings/${listing}/request/intent`}
