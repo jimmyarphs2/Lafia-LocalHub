@@ -78,6 +78,22 @@ describe("LocalHub–ORBIT bridge", () => {
   });
 
   it.each([
+    ["non-ISO timestamp", "September 10, 2026 12:00:00 UTC"],
+    ["impossible calendar date", "2026-02-30T12:00:00Z"],
+    ["timestamp without timezone", "2026-09-10T12:00:00"],
+  ])("rejects invalid occurredAt values: %s", (_label, occurredAt) => {
+    expect(() =>
+      toMerchantOnboardingStalledEvent({
+        merchantId: "merchant-123",
+        hoursStalled: 25,
+        nextStep: "Complete your first listing",
+        sourceEventId: "onboarding-123",
+        occurredAt,
+      }),
+    ).toThrow("occurredAt must be a valid ISO timestamp");
+  });
+
+  it.each([
     ["empty merchant id", { merchantId: " " }],
     ["negative stalled hours", { hoursStalled: -1 }],
     ["fractional stalled hours", { hoursStalled: 1.5 }],
