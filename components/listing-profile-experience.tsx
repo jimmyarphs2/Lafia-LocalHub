@@ -17,7 +17,10 @@ import {
   CommitmentLink,
   normalizeSearchContext,
 } from "@/components/commitment-link";
-import { ListingProfileActions } from "@/components/listing-profile-actions";
+import {
+  ListingDocumentTitle,
+  ListingProfileActions,
+} from "@/components/listing-profile-actions";
 import { OrderIntentForm } from "@/components/order-intent-form";
 import {
   getListingRouteKey,
@@ -117,6 +120,7 @@ export function ListingProfileExperience({
 
   return (
     <div className={styles.page}>
+      <ListingDocumentTitle market={market} title={listing.title} />
       <div className={"container " + styles.shell}>
         <section className={styles.profile} aria-labelledby="listing-title">
           <div className={styles.hero}>

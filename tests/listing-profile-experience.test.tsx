@@ -23,7 +23,15 @@ function renderProfile(
   vendor: Vendor,
   relatedListings: readonly Listing[] = listings.slice(1, 3),
 ) {
-  return render(
+  return render(profile(listing, vendor, relatedListings));
+}
+
+function profile(
+  listing: Listing,
+  vendor: Vendor,
+  relatedListings: readonly Listing[] = listings.slice(1, 3),
+) {
+  return (
     <ListingProfileExperience
       action="enquire"
       category={categories[0]}
@@ -35,7 +43,7 @@ function renderProfile(
       requestRecovery={null}
       searchQuery="birthday cake"
       vendor={vendor}
-    />,
+    />
   );
 }
 
@@ -91,6 +99,17 @@ describe("ListingProfileExperience", () => {
     expect(
       screen.getByText("Listing saved on this device."),
     ).toBeInTheDocument();
+  });
+
+  it("keeps the document title populated across related-listing navigation", () => {
+    const view = renderProfile(demoListing, demoVendor);
+
+    expect(document.title).toBe(demoListing.title + " in lafia");
+
+    const relatedListing = listings[1]!;
+    view.rerender(profile(relatedListing, demoVendor));
+
+    expect(document.title).toBe(relatedListing.title + " in lafia");
   });
 
   it("renders recovery guidance without implying order or booking success", () => {

@@ -1,9 +1,23 @@
 "use client";
 
 import { Bookmark, Share2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import styles from "./listing-profile-experience.module.css";
+
+export function ListingDocumentTitle({
+  market,
+  title,
+}: {
+  market: string;
+  title: string;
+}) {
+  useEffect(() => {
+    document.title = title + " in " + market;
+  }, [market, title]);
+
+  return null;
+}
 
 export function ListingProfileActions({ title }: { title: string }) {
   const [saved, setSaved] = useState(false);
