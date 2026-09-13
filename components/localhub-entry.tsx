@@ -687,7 +687,11 @@ export function LocalHubEntry({
               <ul className={styles.marketList}>
                 {visibleMarkets.map((market) => (
                   <li key={market.slug}>
-                    <button type="button" onClick={() => chooseArea(market)}>
+                    <button
+                      type="button"
+                      aria-label={`${displayAreaName(market)} ${market.region || market.country}`}
+                      onClick={() => chooseArea(market)}
+                    >
                       <MapPin size={19} />
                       <span>
                         {displayAreaName(market)}
