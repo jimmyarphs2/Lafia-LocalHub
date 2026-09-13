@@ -9,7 +9,8 @@ export default async function Home() {
     getCurrentIdentity(),
     getEntryMarkets(),
   ]);
-  const authAvailable = Boolean(getPublicSupabaseConfig()) && isAuthRuntimeReady();
+  const authAvailable =
+    Boolean(getPublicSupabaseConfig()) && isAuthRuntimeReady();
   return (
     <LocalHubEntry
       identity={identity}

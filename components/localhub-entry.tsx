@@ -45,9 +45,7 @@ type Sheet = "area" | "request" | "help" | "terms" | "privacy" | "auth";
 function displayAreaName(area: { slug: string; name: string }) {
   if (area.slug === "lafia") return "Lafia";
   return (
-    area.name
-      .replace(/\s+[—–-]\s+(?:fictional|qa).*$/i, "")
-      .trim() || area.name
+    area.name.replace(/\s+[—–-]\s+(?:fictional|qa).*$/i, "").trim() || area.name
   );
 }
 
@@ -505,8 +503,7 @@ export function LocalHubEntry({
           </button>
         </nav>
         <p>
-          Building a stronger{" "}
-          {area.slug ? areaLabel : "community"}, together.
+          Building a stronger {area.slug ? areaLabel : "community"}, together.
         </p>
       </footer>
       <dialog
@@ -637,7 +634,8 @@ export function LocalHubEntry({
                   type="submit"
                   value="google"
                 >
-                  Continue with Google <ChevronRight size={18} aria-hidden="true" />
+                  Continue with Google{" "}
+                  <ChevronRight size={18} aria-hidden="true" />
                 </button>
               </form>
               {authMessage ? (

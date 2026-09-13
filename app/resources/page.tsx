@@ -5,7 +5,8 @@ import styles from "./resources.module.css";
 
 export const metadata: Metadata = {
   title: "LocalHub resources",
-  description: "Practical guides for buyers and local businesses preparing for LocalHub.",
+  description:
+    "Practical guides for buyers and local businesses preparing for LocalHub.",
 };
 
 const cards = [
@@ -37,16 +38,27 @@ export default function ResourcesPage() {
     <main className={styles.page}>
       <section className={styles.hero}>
         <div className="container">
-          <Link className={styles.back} href="/">← Back to LocalHub</Link>
+          <Link className={styles.back} href="/">
+            ← Back to LocalHub
+          </Link>
           <p className={styles.eyebrow}>Learn before launch</p>
           <h1>Make your next local request easier.</h1>
-          <p>Short, honest guides for discovering nearby businesses and getting your shop ready for LocalHub.</p>
+          <p>
+            Short, honest guides for discovering nearby businesses and getting
+            your shop ready for LocalHub.
+          </p>
         </div>
       </section>
-      <section className={`container ${styles.grid}`} aria-label="LocalHub guides">
+      <section
+        className={`container ${styles.grid}`}
+        aria-label="LocalHub guides"
+      >
         {cards.map(({ slug, title, body, icon: Icon, image }) => (
           <article className={styles.card} key={slug}>
-            <div className={`${styles.cardImage} ${image}`} aria-hidden="true" />
+            <div
+              className={`${styles.cardImage} ${image}`}
+              aria-hidden="true"
+            />
             <div className={styles.cardBody}>
               <Icon size={20} aria-hidden="true" />
               <h2>{title}</h2>
@@ -59,7 +71,9 @@ export default function ResourcesPage() {
         ))}
       </section>
       <section className="container" style={{ paddingBottom: 64 }}>
-        <Link className={styles.link} href="/coming-soon?role=buyer">See the planned launch and countdown <ArrowRight size={16} /></Link>
+        <Link className={styles.link} href="/coming-soon?role=buyer">
+          See the planned launch and countdown <ArrowRight size={16} />
+        </Link>
       </section>
     </main>
   );

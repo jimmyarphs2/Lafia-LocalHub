@@ -13,8 +13,14 @@ export function LaunchCountdown() {
       const totalSeconds = Math.floor(delta / 1000);
       setRemaining({
         days: String(Math.floor(totalSeconds / 86400)),
-        hours: String(Math.floor((totalSeconds % 86400) / 3600)).padStart(2, "0"),
-        minutes: String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0"),
+        hours: String(Math.floor((totalSeconds % 86400) / 3600)).padStart(
+          2,
+          "0",
+        ),
+        minutes: String(Math.floor((totalSeconds % 3600) / 60)).padStart(
+          2,
+          "0",
+        ),
         seconds: String(totalSeconds % 60).padStart(2, "0"),
       });
     };
@@ -24,7 +30,10 @@ export function LaunchCountdown() {
   }, []);
   return (
     <div aria-label="Countdown to the planned LocalHub launch target">
-      <strong>{remaining.days}</strong> days · <strong>{remaining.hours}</strong> hours · <strong>{remaining.minutes}</strong> minutes · <strong>{remaining.seconds}</strong> seconds
+      <strong>{remaining.days}</strong> days ·{" "}
+      <strong>{remaining.hours}</strong> hours ·{" "}
+      <strong>{remaining.minutes}</strong> minutes ·{" "}
+      <strong>{remaining.seconds}</strong> seconds
     </div>
   );
 }
