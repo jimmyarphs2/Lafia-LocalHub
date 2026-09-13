@@ -433,9 +433,7 @@ export function SearchResultsExperience({
                     const isSaved = saved.has(routeKey);
                     const isDemo =
                       listing.provenance?.kind === "fictional-demo";
-                    const image = demoMode
-                      ? imageForListing(listing)
-                      : undefined;
+                    const image = imageForListing(listing);
                     return (
                       <article className={styles.resultCard} key={routeKey}>
                         <div className={styles.resultImage}>
