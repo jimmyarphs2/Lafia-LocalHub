@@ -34,7 +34,7 @@ export type SearchCatalogContext = {
 
 const MAX_QUERY_LENGTH = 160;
 const budgetPatterns = [
-  /(?:under|below|less than|max(?:imum)?|up to)\s*(?:₦|ngn)?\s*(\d+(?:,\d{3})*(?:\.\d+)?)\s*(k|thousand)?/i,
+  /\b(?:under|below|less than|no more than|within|max(?:imum)?|(?:costs?\s+)?up to)\s*(?:₦|ngn)?\s*(\d+(?:,\d{3})*(?:\.\d+)?)\s*(k|thousand)?/i,
   /budget(?:\s*(?:of|is|:))?\s*(?:₦|ngn)?\s*(\d+(?:,\d{3})*(?:\.\d+)?)\s*(k|thousand)?/i,
   /(?:₦|ngn)\s*(\d+(?:,\d{3})*(?:\.\d+)?)\s*(k|thousand)?/i,
 ] as const;
@@ -58,7 +58,7 @@ const capabilityRules: ReadonlyArray<[string, RegExp]> = [
     "photography",
     /\bphotograph(?:er|ers|y|ic)?\b|\bphoto\s*(?:shoot|coverage)?\b/i,
   ],
-  ["phone-repair", /\bphone\s+repair\b|\brepair\s+(?:my\s+)?phone\b/i],
+  ["phone-repair", /\bphone\s+repair\b|\b(?:repair|fix)\s+(?:my\s+)?phone\b/i],
   ["screen-repair", /\b(?:phone\s+)?screen\b/i],
   ["restaurant", /\brestaurants?\b/i],
   ["quiet", /\bquiet\b|\bcalm\b/i],
@@ -87,6 +87,20 @@ const stopWords = new Set([
   "need",
   "find",
   "looking",
+  "want",
+  "who",
+  "what",
+  "can",
+  "could",
+  "would",
+  "you",
+  "please",
+  "do",
+  "does",
+  "is",
+  "are",
+  "to",
+  "this",
   "with",
   "under",
   "below",

@@ -62,6 +62,86 @@ describe("deterministic catalog search", () => {
     expect(intent.categorySlugs).not.toContain("food-restaurants");
   });
 
+  it.each([
+    ["Office chair within 45k", 45_000],
+    ["Office chair within NGN 45,000", 45_000],
+    ["Birthday cake no more than 20 thousand", 20_000],
+    ["Birthday cake that costs up to ₦20,000", 20_000],
+    ["Office chairs that cost up to 45.5k", 45_500],
+  ])("understands the conversational budget in %s", (query, budget) => {
+    const intent = parseSearchIntent(query);
+
+    expect(intent.budgetNaira).toBe(budget);
+    for (const filler of ["within", "cost", "costs", "thousand"]) {
+      expect(intent.terms).not.toContain(filler);
+    }
+  });
+
+  it("supports the entry birthday-cake suggestion without inventing a location", () => {
+    const { intent, matches } = searchListings(
+      "Birthday cake under ₦20,000 near me",
+      "lafia",
+    );
+
+    expect(intent.budgetNaira).toBe(20_000);
+    expect(intent.capabilityTags).toContain("birthday-cake");
+    expect(intent.locationCoordinates).toBeUndefined();
+    expect(matches).toHaveLength(3);
+  });
+
+  it("recognizes phone repair in the conversational entry suggestion", () => {
+    const { intent, matches } = searchListings(
+      "Who can fix my phone today?",
+      "lafia",
+    );
+
+    expect(intent.capabilityTags).toContain("phone-repair");
+    expect(intent.categorySlugs).toContain("electronics");
+    expect(intent.time).toBe("today");
+    expect(intent.terms).toEqual(["fix", "phone"]);
+    expect(matches).toHaveLength(2);
+    expect(
+      matches.every(({ listing }) =>
+        listing.capabilityTags.includes("phone-repair"),
+      ),
+    ).toBe(true);
+  });
+
+  it("retains product and delivery details from the entry office-chair suggestion", () => {
+    const intent = parseSearchIntent(
+      "Office chair within ₦45,000, delivered this week",
+    );
+
+    expect(intent.budgetNaira).toBe(45_000);
+    expect(intent.terms).toEqual(["office", "chair", "delivered", "week"]);
+    expect(intent.time).toBeUndefined();
+    expect(intent.locationCoordinates).toBeUndefined();
+  });
+
+  it("ignores conversational filler while retaining the requested product", () => {
+    expect(
+      parseSearchIntent("Could you please find me an office chair?").terms,
+    ).toEqual(["office", "chair"]);
+  });
+
+  it("continues to rank over-budget matches instead of silently filtering them", () => {
+    const { intent, matches } = searchListings(
+      "Birthday cake no more than ₦1",
+      "lafia",
+    );
+
+    expect(intent.budgetNaira).toBe(1);
+    expect(matches).toHaveLength(3);
+    expect(
+      matches.every((match) =>
+        match.components.some(
+          (component) =>
+            component.dimension === "budget" && component.score === 0,
+        ),
+      ),
+    ).toBe(true);
+  });
+
   it("keeps unmatched demand structured and free of arbitrary query text", () => {
     const result = searchListings("custom aquarium installation", "lafia");
     expect(result.results).toEqual([]);
