@@ -3,10 +3,11 @@
   --entry-muted: #9aaacc;
   --entry-blue: #0757ff;
   --entry-border: #263650;
+  position: relative;
+  isolation: isolate;
   min-height: 100svh;
   background:
     linear-gradient(#060b13e8, #060b13f2),
-    url("/images/localhub-demo-market-hero.webp") center / cover fixed,
     radial-gradient(ellipse 36% 16% at 50% 88%, #0739a953, transparent 100%),
     radial-gradient(ellipse 75% 70% at 50% 40%, #0a15262b, transparent 100%),
     #060b13;
@@ -14,6 +15,27 @@
   color-scheme: dark;
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+.entry::before {
+  position: fixed;
+  z-index: 1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(#060b13e8, #060b13f2);
+}
+.entryImage {
+  position: fixed !important;
+  z-index: 0;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  opacity: 0.26;
+}
+.entry > :not(.entryImage) {
+  position: relative;
+  z-index: 2;
 }
 .entry a {
   color: inherit;
