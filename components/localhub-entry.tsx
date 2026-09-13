@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useSyncExternalStore, useTransition } from "react";
+import {
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+  type FormEvent,
+} from "react";
 import {
   ArrowUp,
   Check,
@@ -18,6 +24,7 @@ import { AccountMenu } from "@/components/account-menu";
 import type { AuthIdentity } from "@/lib/auth/identity";
 import { haversineDistanceKm } from "@/lib/location/haversine";
 import type { EntryMarket } from "@/lib/market/entry-markets";
+import { getBrowserSupabaseClient } from "@/lib/supabase/browser";
 import {
   cleanEntryText,
   parseEntryPreferences,
@@ -33,18 +40,29 @@ const examples = [
   "Office chair within ₦45,000, delivered this week",
 ];
 const emptySnapshot = () => "";
-type Sheet = "area" | "request" | "help" | "terms" | "privacy";
+type Sheet = "area" | "request" | "help" | "terms" | "privacy" | "auth";
+
+function displayAreaName(area: { slug: string; name: string }) {
+  if (area.slug === "lafia") return "Lafia";
+  return (
+    area.name
+      .replace(/\s+[—–-]\s+(?:fictional|qa).*$/i, "")
+      .trim() || area.name
+  );
+}
 
 export function LocalHubEntry({
   identity,
   markets,
   directoryState,
   demoMode,
+  authAvailable,
 }: {
   identity: AuthIdentity | null;
   markets: EntryMarket[];
   directoryState: "ready" | "unavailable" | "not-configured";
   demoMode: boolean;
+  authAvailable: boolean;
 }) {
   const router = useRouter();
   const stored = useSyncExternalStore(
@@ -64,6 +82,7 @@ export function LocalHubEntry({
   const activeMarket = markets.find(
     (market) => market.slug === area.slug && market.slug,
   );
+  const areaLabel = displayAreaName(area);
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -71,6 +90,11 @@ export function LocalHubEntry({
   const [areaFilter, setAreaFilter] = useState("");
   const [locationMessage, setLocationMessage] = useState("");
   const [locating, setLocating] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authMessage, setAuthMessage] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
   const [pending, startTransition] = useTransition();
   const input = useRef<HTMLTextAreaElement>(null);
   const composer = useRef<HTMLFormElement>(null);
@@ -92,12 +116,54 @@ export function LocalHubEntry({
         ? document.activeElement
         : null;
     setSheet(next);
+    setAuthMessage("");
     setFocused(false);
     dialog.current?.showModal();
   }
   function closeSheet() {
     dialog.current?.close();
     opener.current?.focus();
+  }
+  async function submitEmailAuth(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAuthMessage("");
+    const client = getBrowserSupabaseClient();
+    if (!client || !authAvailable) {
+      setAuthMessage(
+        "Sign-in is still being configured. You can continue exploring as a guest.",
+      );
+      return;
+    }
+    setAuthBusy(true);
+    let result:
+      | Awaited<ReturnType<typeof client.auth.signUp>>
+      | Awaited<ReturnType<typeof client.auth.signInWithPassword>>;
+    try {
+      result =
+        authMode === "signup"
+          ? await client.auth.signUp({ email: email.trim(), password })
+          : await client.auth.signInWithPassword({
+              email: email.trim(),
+              password,
+            });
+    } catch {
+      setAuthBusy(false);
+      setAuthMessage("We couldn’t reach sign-in right now. Please try again.");
+      return;
+    }
+    setAuthBusy(false);
+    if (result.error) {
+      setAuthMessage(result.error.message);
+      return;
+    }
+    if (authMode === "signup" && !result.data.session) {
+      setAuthMessage(
+        "Account started. Check your email to confirm, then return here to sign in. Early access remains coming soon.",
+      );
+      return;
+    }
+    closeSheet();
+    router.refresh();
   }
   function chooseArea(next: { slug: string; name: string }) {
     setChosenArea(next);
@@ -205,10 +271,10 @@ export function LocalHubEntry({
               className={styles.areaButton}
               type="button"
               onClick={() => openSheet("area")}
-              aria-label={`Change area, ${area.name}`}
+              aria-label={`Change area, ${areaLabel}`}
             >
               <MapPin size={20} aria-hidden="true" />
-              <span>{area.name}</span>
+              <span>{areaLabel}</span>
               <ChevronDown size={16} aria-hidden="true" />
             </button>
             <small>
@@ -218,10 +284,20 @@ export function LocalHubEntry({
             </small>
           </div>
           <div className={styles.account}>
-            <AccountMenu
-              identity={identity}
-              marketSlug={activeMarket?.slug ?? "lafia"}
-            />
+            {identity ? (
+              <AccountMenu
+                identity={identity}
+                marketSlug={activeMarket?.slug ?? "lafia"}
+              />
+            ) : (
+              <button
+                className={styles.signInButton}
+                type="button"
+                onClick={() => openSheet("auth")}
+              >
+                Sign in
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -416,6 +492,8 @@ export function LocalHubEntry({
       <footer className={styles.footer}>
         <nav aria-label="Footer navigation">
           <Link href="/vendor/onboarding">Sell on LocalHub</Link>
+          <Link href="/resources">Resources</Link>
+          <Link href="/coming-soon">Launch plan</Link>
           <button type="button" onClick={() => openSheet("help")}>
             Help
           </button>
@@ -428,7 +506,7 @@ export function LocalHubEntry({
         </nav>
         <p>
           Building a stronger{" "}
-          {area.name === "Choose area" ? "community" : area.name}, together.
+          {area.slug ? areaLabel : "community"}, together.
         </p>
       </footer>
       <dialog
@@ -456,10 +534,126 @@ export function LocalHubEntry({
                 help: "A little help, a lot nearby",
                 terms: "Early-access terms",
                 privacy: "Your search, your control",
+                auth: "Join LocalHub early access",
               }[sheet]
             }
           </h2>
-          {sheet === "area" ? (
+          {sheet === "auth" ? (
+            <>
+              <div className={styles.authImage} aria-hidden="true" />
+              <p>
+                Save your places, searches, and business progress. Browsing is
+                open now; marketplace launch access is coming soon.
+              </p>
+              {!authAvailable ? (
+                <p className={styles.sheetNotice} role="status">
+                  Sign-in setup is still being completed in this preview. You
+                  can continue exploring without an account.
+                </p>
+              ) : null}
+              <div
+                className={styles.authModes}
+                role="tablist"
+                aria-label="Account action"
+              >
+                <button
+                  className={authMode === "signin" ? styles.authModeActive : ""}
+                  type="button"
+                  role="tab"
+                  aria-selected={authMode === "signin"}
+                  onClick={() => {
+                    setAuthMode("signin");
+                    setAuthMessage("");
+                  }}
+                >
+                  Sign in
+                </button>
+                <button
+                  className={authMode === "signup" ? styles.authModeActive : ""}
+                  type="button"
+                  role="tab"
+                  aria-selected={authMode === "signup"}
+                  onClick={() => {
+                    setAuthMode("signup");
+                    setAuthMessage("");
+                  }}
+                >
+                  Create account
+                </button>
+              </div>
+              <form className={styles.authForm} onSubmit={submitEmailAuth}>
+                <label htmlFor="entry-email">Email</label>
+                <input
+                  id="entry-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                />
+                <label htmlFor="entry-password">Password</label>
+                <input
+                  id="entry-password"
+                  type="password"
+                  autoComplete={
+                    authMode === "signup" ? "new-password" : "current-password"
+                  }
+                  minLength={6}
+                  required
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="At least 6 characters"
+                />
+                <button
+                  className={styles.primary}
+                  type="submit"
+                  disabled={!authAvailable || authBusy}
+                >
+                  {authBusy
+                    ? "Working…"
+                    : authMode === "signup"
+                      ? "Create account"
+                      : "Sign in"}
+                </button>
+              </form>
+              <div className={styles.divider} aria-hidden="true">
+                <span /> <p>or</p> <span />
+              </div>
+              <form
+                action="/auth/provider"
+                method="post"
+                className={styles.authGoogle}
+              >
+                <input
+                  name="next"
+                  type="hidden"
+                  value={activeMarket ? `/${activeMarket.slug}` : "/"}
+                />
+                <button
+                  className={styles.secondary}
+                  disabled={!authAvailable}
+                  name="provider"
+                  type="submit"
+                  value="google"
+                >
+                  Continue with Google <ChevronRight size={18} aria-hidden="true" />
+                </button>
+              </form>
+              {authMessage ? (
+                <p className={styles.sheetNotice} role="status">
+                  {authMessage}
+                </p>
+              ) : null}
+              <Link
+                className={styles.sheetLink}
+                href="/coming-soon?role=buyer"
+                onClick={closeSheet}
+              >
+                See early-access launch plan <ChevronRight size={16} />
+              </Link>
+            </>
+          ) : sheet === "area" ? (
             <>
               <p>
                 Discover in your city or explore somewhere else. Available
@@ -498,7 +692,7 @@ export function LocalHubEntry({
                     <button type="button" onClick={() => chooseArea(market)}>
                       <MapPin size={19} />
                       <span>
-                        {market.name}
+                        {displayAreaName(market)}
                         <small>{market.region || market.country}</small>
                       </span>
                       {area.slug === market.slug ? (
