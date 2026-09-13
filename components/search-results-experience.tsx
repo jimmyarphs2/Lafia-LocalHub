@@ -56,7 +56,27 @@ const demoCategoryImages: Record<string, string> = {
 };
 
 function imageForListing(listing: ListingMatch["listing"]) {
-  return demoImages[listing.slug] ?? demoCategoryImages[listing.category];
+  const directImage = demoImages[listing.slug];
+  if (directImage) return directImage;
+
+  const searchable = [
+    listing.category,
+    listing.title,
+    listing.slug,
+    ...listing.capabilityTags,
+  ]
+    .join(" ")
+    .toLowerCase();
+  if (/(cake|bake|food|restaurant|cater)/.test(searchable)) {
+    return demoImages["made-to-order-cakes"];
+  }
+  if (/(photo|camera|portrait|ceremony)/.test(searchable)) {
+    return demoImages["event-photography"];
+  }
+  if (/(generator|equipment|hire|rental)/.test(searchable)) {
+    return demoImages["30kva-generator-hire"];
+  }
+  return demoCategoryImages[listing.category];
 }
 
 const currency = new Intl.NumberFormat("en-NG", {
