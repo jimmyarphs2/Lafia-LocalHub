@@ -7,6 +7,7 @@ import {
   useState,
   useSyncExternalStore,
   useTransition,
+  useEffect,
   type FormEvent,
 } from "react";
 import {
@@ -25,6 +26,7 @@ import type { AuthIdentity } from "@/lib/auth/identity";
 import { haversineDistanceKm } from "@/lib/location/haversine";
 import type { EntryMarket } from "@/lib/market/entry-markets";
 import { getBrowserSupabaseClient } from "@/lib/supabase/browser";
+import Image from "next/image";
 import {
   cleanEntryText,
   parseEntryPreferences,
@@ -107,6 +109,17 @@ export function LocalHubEntry({
       .toLowerCase()
       .includes(areaFilter.trim().toLowerCase()),
   );
+
+  useEffect(() => {
+    const text = cleanEntryText(query);
+    if (!activeMarket || !text) return;
+    const timer = window.setTimeout(() => {
+      router.prefetch(
+        `/${activeMarket.slug}/search?q=${encodeURIComponent(text)}`,
+      );
+    }, 240);
+    return () => window.clearTimeout(timer);
+  }, [activeMarket, query, router]);
 
   function openSheet(next: Sheet) {
     opener.current =
@@ -256,6 +269,14 @@ export function LocalHubEntry({
           setFocused(false);
       }}
     >
+      <Image
+        alt=""
+        className={styles.entryImage}
+        fill
+        priority
+        sizes="100vw"
+        src="/images/localhub-demo-market-hero.webp"
+      />
       <a className="skip-link" href="#entry-search">
         Skip to search
       </a>

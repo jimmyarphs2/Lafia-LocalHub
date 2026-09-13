@@ -49,6 +49,15 @@ const demoImages: Record<string, string> = {
   "event-and-portrait-session": "/images/localhub-demo-photographer.webp",
   "30kva-generator-hire": "/images/localhub-demo-electrical.webp",
 };
+const demoCategoryImages: Record<string, string> = {
+  "food-restaurants": "/images/localhub-demo-cake.webp",
+  photography: "/images/localhub-demo-photographer.webp",
+  "equipment-hire": "/images/localhub-demo-electrical.webp",
+};
+
+function imageForListing(listing: ListingMatch["listing"]) {
+  return demoImages[listing.slug] ?? demoCategoryImages[listing.category];
+}
 
 const currency = new Intl.NumberFormat("en-NG", {
   style: "currency",
@@ -333,6 +342,18 @@ export function SearchResultsExperience({
               </div>
             </div>
           </div>
+          {demoMode ? (
+            <div className={styles.previewNotice} role="status">
+              <div>
+                <strong>Early-access preview</strong>
+                <span>
+                  Browse how LocalHub will match nearby needs. Ordering and
+                  public request fulfilment open at launch.
+                </span>
+              </div>
+              <Link href="/coming-soon">See the launch plan</Link>
+            </div>
+          ) : null}
 
           <div className={styles.mobileFilters} aria-label="Quick filters">
             <CompactFilter label="Category" value={category}>
@@ -406,13 +427,13 @@ export function SearchResultsExperience({
             visibleMatches.length ? (
               view === "list" ? (
                 <div className={styles.resultList}>
-                  {visibleMatches.map((match) => {
+                  {visibleMatches.map((match, index) => {
                     const listing = match.listing;
                     const routeKey = getListingRouteKey(listing);
                     const isSaved = saved.has(routeKey);
                     const isDemo =
                       listing.provenance?.kind === "fictional-demo";
-                    const image = isDemo ? demoImages[listing.slug] : undefined;
+                    const image = isDemo ? imageForListing(match) : undefined;
                     return (
                       <article className={styles.resultCard} key={routeKey}>
                         <div className={styles.resultImage}>
@@ -421,6 +442,7 @@ export function SearchResultsExperience({
                               alt=""
                               fill
                               sizes="(max-width: 760px) 42vw, (max-width: 1100px) 260px, 300px"
+                              priority={index === 0}
                               src={image}
                             />
                           ) : (
