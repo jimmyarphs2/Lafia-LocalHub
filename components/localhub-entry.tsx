@@ -56,13 +56,13 @@ export function LocalHubEntry({
   markets,
   directoryState,
   demoMode,
-  authAvailable,
+  authAvailable = true,
 }: {
   identity: AuthIdentity | null;
   markets: EntryMarket[];
   directoryState: "ready" | "unavailable" | "not-configured";
   demoMode: boolean;
-  authAvailable: boolean;
+  authAvailable?: boolean;
 }) {
   const router = useRouter();
   const stored = useSyncExternalStore(
