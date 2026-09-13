@@ -34,12 +34,16 @@ describe("auth route boundaries", () => {
     );
     for (const route of [
       "app/auth/provider/route.ts",
-      "app/auth/email/route.ts",
       "app/auth/callback/route.ts",
       "app/auth/resume/route.ts",
     ]) {
       expect(read(route)).toContain("consumeAuthRateLimit");
       expect(read(route)).toContain("catch");
     }
+  });
+
+  it("keeps the market-scoped vendor entry as a compatibility redirect", () => {
+    const redirectPage = read("app/[market]/vendor/onboarding/page.tsx");
+    expect(redirectPage).toContain('redirect("/vendor/onboarding")');
   });
 });

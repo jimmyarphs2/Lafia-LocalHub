@@ -9,7 +9,10 @@ function read(relativePath: string) {
 
 describe("unmet-demand route boundary", () => {
   it("replaces the misleading generic guest intent with a query-free candidate", () => {
-    const source = read("app/[market]/search/page.tsx");
+    const source = [
+      read("app/[market]/search/page.tsx"),
+      read("components/search-results-experience.tsx"),
+    ].join("\n");
 
     expect(source).toContain("deriveUnmetDemandCaptureCandidate");
     expect(source).toContain("demandConfirmationPath");

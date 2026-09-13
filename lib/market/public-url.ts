@@ -1,7 +1,15 @@
 const developmentOrigin = "http://localhost:3000";
+const vercelHostnamePattern = /^(?:[a-z0-9-]+\.)*vercel\.app$/i;
 
 function isBuildPhase() {
   return process.env.NEXT_PHASE === "phase-production-build";
+}
+
+function getVercelPreviewUrl(): URL | null {
+  const hostname =
+    process.env.VERCEL_BRANCH_URL?.trim() || process.env.VERCEL_URL?.trim();
+  if (!hostname || !vercelHostnamePattern.test(hostname)) return null;
+  return new URL(`https://${hostname}`);
 }
 
 /**
@@ -18,6 +26,8 @@ export function getPublicAppUrl(): URL {
         "NEXT_PUBLIC_APP_URL must be configured when demo mode is disabled.",
       );
     }
+    const vercelPreviewUrl = getVercelPreviewUrl();
+    if (vercelPreviewUrl) return vercelPreviewUrl;
     if (process.env.NODE_ENV === "development" || isBuildPhase()) {
       return new URL(developmentOrigin);
     }

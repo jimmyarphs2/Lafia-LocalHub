@@ -109,6 +109,10 @@ describe("order history route boundaries", () => {
     resolve(process.cwd(), "app/[market]/listings/[listing]/page.tsx"),
     "utf8",
   );
+  const listingProfile = readFileSync(
+    resolve(process.cwd(), "components/listing-profile-experience.tsx"),
+    "utf8",
+  );
   const customerList = readFileSync(
     resolve(process.cwd(), "app/[market]/orders/page.tsx"),
     "utf8",
@@ -134,8 +138,8 @@ describe("order history route boundaries", () => {
     expect(listingPage).toContain(
       "!isFictionalDemo && listing.isOrderable === true",
     );
-    expect(listingPage).toContain("<OrderIntentForm");
-    expect(listingPage).toContain("<CommitmentLink");
+    expect(listingProfile).toContain("<OrderIntentForm");
+    expect(listingProfile).toContain("<CommitmentLink");
     expect(listingPage).toContain('query.order === "expired"');
     expect(listingPage).toContain('query.order === "unavailable"');
   });
@@ -180,7 +184,7 @@ describe("order history route boundaries", () => {
     expect(mobileNav).not.toContain("AccountIntentButton");
     expect(mobileNav).toContain("/activity");
     expect(mobileNav).toContain("<span>Activity</span>");
-    expect(mobileNav).toContain('identity ? "Account" : "Sign in"');
+    expect(mobileNav).toContain('identity ? "Profile" : "Sign in"');
     expect(mobileNav).toContain("/account");
   });
 });

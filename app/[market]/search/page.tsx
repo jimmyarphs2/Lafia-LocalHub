@@ -1,13 +1,6 @@
-import { Lightbulb } from "lucide-react";
-import Link from "next/link";
-import {
-  CatalogStateNotice,
-  ListingMatchRows,
-  ListingRows,
-} from "@/components/catalog-ui";
+import { CatalogStateNotice } from "@/components/catalog-ui";
 import { normalizeSearchContext } from "@/components/commitment-link";
-import { SearchForm } from "@/components/search-form";
-import { getCategoryRouteKey } from "@/lib/catalog/data";
+import { SearchResultsExperience } from "@/components/search-results-experience";
 import { getCatalogForMarket } from "@/lib/catalog/source";
 import { describeIntent, searchListings } from "@/lib/catalog/search";
 import {
@@ -49,104 +42,27 @@ export default async function SearchPage({
         demandCandidate.categoryId,
       )
     : null;
+
+  if (catalog.state !== "ready") {
+    return (
+      <section className="container section">
+        <CatalogStateNotice state={catalog.state} subject="directory" />
+      </section>
+    );
+  }
+
   return (
-    <>
-      <header className="directory-header">
-        <div className="container">
-          <h1>{raw ? `Results for “${raw}”` : "Search the directory"}</h1>
-          {derived && (
-            <p className="lede" style={{ marginLeft: 0 }}>
-              Interpreted as: {derived}
-            </p>
-          )}
-          <SearchForm market={market} defaultValue={raw} />
-        </div>
-      </header>
-      <div className="container result-layout">
-        <aside className="filters" aria-label="Browse categories">
-          <div className="filter-group">
-            <p>Categories</p>
-            {catalog.categories.map((category) => (
-              <Link
-                key={getCategoryRouteKey(category)}
-                href={`/${market}/categories/${getCategoryRouteKey(category)}`}
-              >
-                {category.name}
-              </Link>
-            ))}
-          </div>
-          <div className="filter-group">
-            <p>About this search</p>
-            <span className="listing-meta">
-              Natural-language terms help filter the{" "}
-              {demoMode ? "fictional demo" : "published"} directory. Matching
-              uses deterministic category, availability, approximate distance,
-              and price-range rules. It does not call AI or live maps.
-            </span>
-          </div>
-        </aside>
-        <section>
-          {results.length ? (
-            <>
-              <p className="listing-meta">
-                {results.length} matching{" "}
-                {demoMode ? "fictional demo" : "published"}{" "}
-                {results.length === 1 ? "listing" : "listings"}.
-              </p>
-              <h2 className="results-heading">
-                {raw ? "Ranked directory matches" : "Directory listings"}
-              </h2>
-              {raw ? (
-                <>
-                  <p className="match-method-note">
-                    Match scores are whole-number product signals, not
-                    probabilities or endorsements. Merchant ratings are excluded
-                    because no rating evidence is published
-                    {demoMode ? " in the demo data" : ""}; remaining evidence
-                    weights are renormalized.
-                  </p>
-                  <ListingMatchRows
-                    market={market}
-                    matches={matches}
-                    query={raw}
-                  />
-                </>
-              ) : (
-                <ListingRows market={market} listings={results} />
-              )}
-            </>
-          ) : catalog.state !== "ready" ? (
-            <CatalogStateNotice state={catalog.state} subject="directory" />
-          ) : (
-            <div className="empty-state">
-              <Lightbulb aria-hidden="true" size={30} color="#2350f4" />
-              <h2>
-                We do not have a matching {demoMode ? "demo" : "published"}{" "}
-                listing yet.
-              </h2>
-              <p>
-                {!raw
-                  ? "No listings are published in this market yet."
-                  : demandPath
-                    ? "This recognized category currently has no published supply. You can explicitly record one private daily category-gap marker after signing in."
-                    : demoMode
-                      ? "Fictional demo searches never create operational demand records."
-                      : "Try a broader category or fewer details. LocalHub records a supply gap only when one published category has no published listing."}
-              </p>
-              {demandPath ? (
-                <a
-                  className="button button-primary"
-                  href={demandPath}
-                  referrerPolicy="no-referrer"
-                  rel="noreferrer"
-                >
-                  Review category-gap record
-                </a>
-              ) : null}
-            </div>
-          )}
-        </section>
-      </div>
-    </>
+    <SearchResultsExperience
+      categories={catalog.categories}
+      demandPath={demandPath}
+      demoMode={demoMode}
+      interpretedQuery={derived ? `Interpreted as ${derived}` : undefined}
+      market={market}
+      marketName={
+        catalog.market?.name ?? (market === "lafia" ? "Lafia" : market)
+      }
+      matches={matches}
+      query={raw}
+    />
   );
 }

@@ -184,6 +184,18 @@ describe("provider authentication body boundary", () => {
     expect(response.cookies.get(AUTH_RETURN_COOKIE)?.maxAge).toBe(0);
   });
 
+  it("rejects providers other than Google before OAuth starts", async () => {
+    const response = await POST(
+      providerRequest({ provider: "facebook", next: "/lafia/account" }),
+    );
+
+    expect(
+      new URL(response.headers.get("location")!).searchParams.get("error"),
+    ).toBe("auth_failed");
+    expect(authMocks.consumeAuthRateLimit).not.toHaveBeenCalled();
+    expect(authMocks.signInWithOAuth).not.toHaveBeenCalled();
+  });
+
   it("cancels an oversized chunked form before OAuth or rate-limit operations", async () => {
     const stream = oversizedChunkedProviderRequest();
 

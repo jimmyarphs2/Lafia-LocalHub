@@ -13,6 +13,29 @@ const searchableText = (listing: Listing) =>
     .join(" ")
     .toLowerCase();
 
+const publishedCapabilityText = (listing: Listing) =>
+  [
+    listing.title,
+    listing.description,
+    listing.location,
+    ...listing.serviceAreas,
+  ]
+    .join(" ")
+    .toLowerCase();
+
+const publishedTextMatchesCapability = (
+  listing: Listing,
+  capability: string,
+) => {
+  const normalizedText = ` ${publishedCapabilityText(listing).replace(/[^a-z0-9]+/g, " ")} `;
+  const normalizedCapability = capability.replaceAll("-", " ");
+
+  return (
+    normalizedText.includes(` ${normalizedCapability} `) ||
+    normalizedText.includes(` ${normalizedCapability}s `)
+  );
+};
+
 export function listingMatchesIntentCategory(
   intent: SearchIntent,
   listing: Listing,
@@ -28,11 +51,14 @@ export function getCandidateListings(
   source: readonly Listing[],
 ): Listing[] {
   return source.filter((listing) => {
+    const haystack = searchableText(listing);
     const categoryMatch = listingMatchesIntentCategory(intent, listing);
     const hasCategoryIntent =
       intent.categoryIds.length > 0 || intent.categorySlugs.length > 0;
-    const capabilityMatch = intent.capabilityTags.some((tag) =>
-      listing.capabilityTags.includes(tag),
+    const capabilityMatch = intent.capabilityTags.some(
+      (tag) =>
+        listing.capabilityTags.includes(tag) ||
+        publishedTextMatchesCapability(listing, tag),
     );
 
     if (intent.capabilityTags.length > 0) {
@@ -40,7 +66,6 @@ export function getCandidateListings(
     }
     if (hasCategoryIntent) return categoryMatch;
 
-    const haystack = searchableText(listing);
     const termHits = intent.terms.filter((term) => haystack.includes(term));
     return intent.terms.length === 1
       ? termHits.length === 1

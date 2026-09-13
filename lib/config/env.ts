@@ -9,6 +9,7 @@ export type PublicSupabaseConfig = {
 };
 
 const urlSchema = z.string().trim().url();
+const vercelHostnamePattern = /^(?:[a-z0-9-]+\.)*vercel\.app$/i;
 
 function parseSafeUrl(value: string | undefined): URL | null {
   const parsed = urlSchema.safeParse(value?.trim());
@@ -18,6 +19,16 @@ function parseSafeUrl(value: string | undefined): URL | null {
     url.protocol === "http:" &&
     ["localhost", "127.0.0.1"].includes(url.hostname);
   return url.protocol === "https:" || localHttp ? url : null;
+}
+
+function getVercelPreviewAppUrl(): URL | null {
+  if (process.env.VERCEL_ENV !== "preview") return null;
+
+  const hostname =
+    process.env.VERCEL_BRANCH_URL?.trim() || process.env.VERCEL_URL?.trim();
+  if (!hostname || !vercelHostnamePattern.test(hostname)) return null;
+
+  return new URL(`https://${hostname}`);
 }
 
 /**
@@ -46,6 +57,12 @@ export function assertPublicSupabaseConfig(): PublicSupabaseConfig {
 }
 
 export function getAppUrl(): URL {
+  // Server redirects in Vercel Preview must remain on the active branch. The
+  // configured public URL is the Production canonical and may be shared with
+  // Preview for metadata, so it is not a safe redirect origin there.
+  const previewUrl = getVercelPreviewAppUrl();
+  if (previewUrl) return previewUrl;
+
   const configuredUrl = parseSafeUrl(process.env.NEXT_PUBLIC_APP_URL);
   if (configuredUrl) {
     if (
