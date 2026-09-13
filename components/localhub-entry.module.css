@@ -33,9 +33,15 @@
   object-fit: cover;
   opacity: 0.26;
 }
-.entry > :not(.entryImage) {
+.entry > header,
+.entry > main,
+.entry > footer {
   position: relative;
   z-index: 2;
+}
+.entry > .skip-link {
+  position: absolute;
+  z-index: 20;
 }
 .entry a {
   color: inherit;
